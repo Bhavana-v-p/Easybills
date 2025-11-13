@@ -1,26 +1,23 @@
 // middleware/auth.js
 
-// Minimal auth middleware stub for development/testing.
-// - If `Authorization: Bearer <id>` header is provided, it will use that id.
-// - Otherwise, it injects a placeholder user: { id: 1, role: 'Faculty' }.
+// Authentication middleware: uses Passport session if available.
+// Falls back to the previous development stub when not authenticated and in development.
 
 module.exports = function (req, res, next) {
   try {
-    const auth = req.header('Authorization');
-    if (auth && auth.startsWith('Bearer ')) {
-      const token = auth.slice(7).trim();
-      // In real implementation decode/verify JWT or session
-      // For now: accept numeric token as user id.
-      const id = Number(token);
-      if (!Number.isNaN(id)) {
-        req.user = { id, role: 'Faculty' };
-        return next();
-      }
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      // `req.user` is set by Passport (User instance)
+      return next();
     }
 
-    // Default development user (do NOT use in production)
-    req.user = { id: 1, role: 'Faculty' };
-    return next();
+    // Allow unauthenticated access in development for quick testing
+    if (process.env.NODE_ENV !== 'production') {
+      req.user = { id: 1, role: 'Faculty' };
+      return next();
+    }
+
+    // In production require authentication
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
   } catch (err) {
     next(err);
   }

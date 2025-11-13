@@ -3,6 +3,7 @@
 const express = require('express');
 const { connectDB } = require('./config/db');
 const claimsRoutes = require('./routes/claims');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -10,8 +11,21 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Authentication middleware (development stub).
-// This injects `req.user` so controllers can use `req.user.id`.
+// Sessions + Passport for Google OAuth
+const session = require('express-session');
+const passport = require('./config/passport');
+
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'keyboard cat',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Authentication middleware (uses session passport info)
 const auth = require('./middleware/auth');
 app.use(auth);
 
@@ -23,6 +37,7 @@ connectDB().catch((err) => {
 
 // Routes
 app.use('/api', claimsRoutes);
+app.use('/auth', authRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
