@@ -6,6 +6,13 @@ const User = require('../models/User');
 
 const allowedDomain = process.env.GOOGLE_ALLOWED_DOMAIN; // e.g., 'bits-pilani.ac.in'
 
+// Startup debug: log presence of required Google auth env vars (do not print secrets)
+console.log('Google OAuth config:');
+console.log(' - GOOGLE_CLIENT_ID present:', !!process.env.GOOGLE_CLIENT_ID);
+console.log(' - GOOGLE_CLIENT_SECRET present:', !!process.env.GOOGLE_CLIENT_SECRET);
+console.log(' - GOOGLE_CALLBACK_URL:', !!process.env.GOOGLE_CALLBACK_URL);
+console.log(' - GOOGLE_ALLOWED_DOMAIN:', !!process.env.GOOGLE_ALLOWED_DOMAIN);
+
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
