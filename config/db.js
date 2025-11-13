@@ -1,0 +1,31 @@
+// config/db.js
+
+const { Sequelize } = require('sequelize');
+
+// Load environment variables from .env file
+require('dotenv').config();
+
+// Initialize Sequelize with PostgreSQL connection details
+const sequelize = new Sequelize(process.env.PG_DATABASE, process.env.PG_USER, process.env.PG_PASSWORD, {
+    host: process.env.PG_HOST,
+    dialect: 'postgres',
+    // Optional: Log SQL queries to console
+    logging: false 
+});
+
+const connectDB = async () => {
+    try {
+        await sequelize.authenticate();
+        console.log('PostgreSQL connection has been established successfully.');
+        
+        // This command ensures your models are synced (tables created)
+        // Use { force: true } only in development to drop and recreate tables
+        await sequelize.sync(); 
+        
+    } catch (error) {
+        console.error('Unable to connect to the database:', error);
+        process.exit(1);
+    }
+};
+
+module.exports = { sequelize, connectDB };
