@@ -1,4 +1,47 @@
 version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - PG_DATABASE=${PG_DATABASE:-easybills_db}
+      - PG_USER=${PG_USER:-postgres}
+      - PG_PASSWORD=${PG_PASSWORD:-postgres}
+      - PG_HOST=db
+      - PG_PORT=5432
+      - REDIS_URL=redis://redis:6379
+      - SESSION_SECRET=${SESSION_SECRET:-devsecret}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/usr/src/app
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: ${PG_DATABASE:-easybills_db}
+      POSTGRES_USER: ${PG_USER:-postgres}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-postgres}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  db_data:
+version: '3.8'
 
 services:
   db:
