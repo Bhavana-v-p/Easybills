@@ -4,6 +4,7 @@ const ExpenseClaim = require('../models/Claim');
 const User = require('../models/User');
 const emailService = require('../services/emailService');
 const fileService = require('../services/fileService');
+const realtime = require('../services/realtime');
 
 /**
  * @desc    Submit a new expense claim
@@ -131,6 +132,17 @@ exports.updateClaimStatus = async (req, res) => {
             }
         }
 
+        // Emit realtime event to the faculty user
+        try {
+            const io = realtime.getIO();
+            const payload = { claimId: claim.id, status: claim.status, auditEntry };
+            io.to(`user_${claim.facultyId}`).emit('claimStatusUpdated', payload);
+            io.emit('claimUpdated', { claimId: claim.id, status: claim.status });
+        } catch (err) {
+            // Realtime not initialized or emit failed - log and continue
+            console.warn('Realtime emit failed:', err.message);
+        }
+
         res.status(200).json({
             success: true,
             data: claim,
@@ -251,6 +263,18 @@ exports.uploadClaimDocument = async (req, res) => {
             }]
         });
 
+        // Emit realtime event about new document
+        try {
+            const io = realtime.getIO();
+            io.to(`user_${claim.facultyId}`).emit('documentUploaded', {
+                claimId,
+                fileName: uploadResult.fileName,
+                fileUrl: uploadResult.fileUrl,
+                uploadedAt: uploadResult.uploadedAt
+            });
+        } catch (err) {
+            console.warn('Realtime emit failed (document):', err.message);
+        }
         res.status(200).json({
             success: true,
             data: {

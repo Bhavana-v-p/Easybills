@@ -63,8 +63,22 @@ app.use((err, req, res, next) => {
     res.status(500).json({ success: false, error: 'Server Error' });
 });
 
-// Start server
+// Start server with Socket.io
+const http = require('http');
+const realtime = require('./services/realtime');
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Initialize realtime with CORS allowing frontend origin
+realtime.init(server, {
+    cors: {
+        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
+});
+
+server.listen(PORT, () => {
     console.log(`EasyBills server running on port ${PORT}`);
 });
