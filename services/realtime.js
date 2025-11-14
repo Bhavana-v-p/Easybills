@@ -14,11 +14,20 @@ function init(server, options = {}) {
 
   // If a session middleware is provided, use it to populate socket.request.session
   if (sessionMiddleware) {
+    // Use session middleware to parse cookies and populate session during handshake
     io.use((socket, next) => {
       try {
         sessionMiddleware(socket.request, {}, (err) => {
           if (err) return next(err);
           // session parsed (may be undefined if no session exists)
+          const session = socket.request.session;
+          const authed = session && session.passport && session.passport.user;
+          if (!authed) {
+            // Reject the handshake - strict mode: no anonymous sockets
+            const e = new Error('Unauthorized');
+            e.data = { message: 'Authentication required' };
+            return next(e);
+          }
           return next();
         });
       } catch (err) {
