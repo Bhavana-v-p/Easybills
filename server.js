@@ -24,15 +24,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Sessions + Passport for Google OAuth
-const session = require('express-session');
 const passport = require('./config/passport');
+const { sessionMiddleware } = require('./config/session');
 
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'keyboard cat',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false }
-}));
+// Use centralized session middleware (so Socket.io can reuse it)
+app.use(sessionMiddleware);
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -76,7 +72,8 @@ realtime.init(server, {
         origin: process.env.FRONTEND_URL || 'http://localhost:5173',
         methods: ['GET', 'POST'],
         credentials: true
-    }
+    },
+    sessionMiddleware: sessionMiddleware
 });
 
 server.listen(PORT, () => {
