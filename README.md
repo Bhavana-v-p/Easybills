@@ -19,6 +19,8 @@ Endpoints
 
 - POST `/api/faculty/claims` - Submit a claim (body: `category`, `amount`, `description`, `dateIncurred`)
 - GET `/api/faculty/claims` - Get claims for the logged-in faculty user
+- POST `/api/faculty/claims/:id/documents` - Upload a document to a claim (multipart/form-data, field name: `document`)
+- GET `/api/faculty/claims/:id/documents` - List all documents for a claim
 - PUT `/api/finance/claims/:id/status` - Update claim status and send notification (body: `status`, `notes`)
 - POST `/api/demo/send-email` - Send a demo email for testing (body: `email`, `claimId`, `status`, `notes`)
 
@@ -76,6 +78,57 @@ EMAIL_FROM=noreply@easybills.com # From address in emails
 - SendGrid: Use API key or SMTP credentials
 - AWS SES: Configure IAM credentials
 - Other SMTP: Use SMTP username/password
+
+### File Upload (Firebase Cloud Storage)
+
+Faculty can upload documents (receipts, invoices, etc.) to claims after creation:
+
+```powershell
+# Upload a file to a claim
+curl -X POST http://localhost:3000/api/faculty/claims/1/documents `
+  -F "document=@C:\path\to\receipt.pdf"
+
+# Get all documents for a claim
+curl -X GET http://localhost:3000/api/faculty/claims/1/documents
+```
+
+**File Upload Configuration:**
+
+Required `.env` variables:
+
+```
+FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-key.json    # Path to Firebase service account JSON key
+FIREBASE_STORAGE_BUCKET=your-bucket-name.appspot.com # Cloud Storage bucket name
+```
+
+**Setup Steps:**
+
+1. Create a Firebase project: https://console.firebase.google.com
+2. Create a Cloud Storage bucket in your project
+3. Generate a service account key:
+   - Go to Project Settings → Service Accounts → Generate New Private Key
+   - Save the JSON key to `./firebase-key.json` in your project root
+4. Add the bucket name and key path to `.env`
+5. Add `firebase-key.json` to `.gitignore` to prevent accidental secret commits
+
+**Supported File Types:** PDF, PNG, JPG, GIF, DOCX, XLSX, DOC, XLS (max 10MB each)
+
+**Upload Response Example:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "fileName": "receipt.pdf",
+    "fileUrl": "https://firebasestorage.googleapis.com/v0/b/...",
+    "uploadedAt": "2025-01-20T10:30:00Z",
+    "size": 245632
+  },
+  "message": "Document uploaded successfully"
+}
+```
+
+Files are stored with 1-year signed URLs, allowing secure access without authentication.
 
 Notes for developers
 

@@ -3,6 +3,7 @@
 const ExpenseClaim = require('../models/Claim');
 const User = require('../models/User');
 const emailService = require('../services/emailService');
+const fileService = require('../services/fileService');
 
 /**
  * @desc    Submit a new expense claim
@@ -192,6 +193,112 @@ exports.sendDemoEmail = async (req, res) => {
         }
     } catch (error) {
         console.error('Error sending demo email:', error);
+        res.status(500).json({ success: false, error: 'Server Error', details: error.message });
+    }
+};
+
+/**
+ * @desc    Upload a document/receipt to an existing claim
+ * @route   POST /api/faculty/claims/:id/documents
+ * @access  Private (Faculty)
+ */
+exports.uploadClaimDocument = async (req, res) => {
+    const facultyId = req.user.id || 1; // Placeholder ID for example
+    const { id: claimId } = req.params;
+
+    // Validate file exists
+    if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No file provided' });
+    }
+
+    try {
+        // Verify that the claim belongs to the faculty member
+        const claim = await ExpenseClaim.findByPk(claimId);
+        if (!claim) {
+            return res.status(404).json({ success: false, error: 'Claim not found' });
+        }
+
+        if (claim.facultyId !== facultyId) {
+            return res.status(403).json({ success: false, error: 'Unauthorized: You can only upload to your own claims' });
+        }
+
+        // Upload file to Firebase
+        const uploadResult = await fileService.uploadFile(req.file, claimId);
+
+        if (!uploadResult.success) {
+            return res.status(500).json({ success: false, error: 'File upload failed', details: uploadResult.error });
+        }
+
+        // Add document to claim's documents array
+        const documents = claim.documents || [];
+        documents.push({
+            fileName: uploadResult.fileName,
+            fileUrl: uploadResult.fileUrl,
+            storagePath: uploadResult.storagePath,
+            uploadedAt: uploadResult.uploadedAt,
+            size: req.file.size,
+            mimeType: req.file.mimetype
+        });
+
+        // Update claim with new document and append audit trail entry
+        await claim.update({
+            documents: documents,
+            auditTrail: [...(claim.auditTrail || []), {
+                timestamp: new Date(),
+                status: claim.status,
+                changedBy: 'Faculty',
+                notes: `Document uploaded: ${uploadResult.fileName}`
+            }]
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                fileName: uploadResult.fileName,
+                fileUrl: uploadResult.fileUrl,
+                uploadedAt: uploadResult.uploadedAt,
+                size: req.file.size
+            },
+            message: 'Document uploaded successfully'
+        });
+
+    } catch (error) {
+        console.error('Error uploading document:', error);
+        res.status(500).json({ success: false, error: 'Server Error', details: error.message });
+    }
+};
+
+/**
+ * @desc    List all documents for a claim
+ * @route   GET /api/faculty/claims/:id/documents
+ * @access  Private (Faculty)
+ */
+exports.getClaimDocuments = async (req, res) => {
+    const facultyId = req.user.id || 1; // Placeholder ID for example
+    const { id: claimId } = req.params;
+
+    try {
+        // Verify that the claim belongs to the faculty member
+        const claim = await ExpenseClaim.findByPk(claimId);
+        if (!claim) {
+            return res.status(404).json({ success: false, error: 'Claim not found' });
+        }
+
+        if (claim.facultyId !== facultyId) {
+            return res.status(403).json({ success: false, error: 'Unauthorized: You can only view your own claims' });
+        }
+
+        const documents = claim.documents || [];
+
+        res.status(200).json({
+            success: true,
+            data: documents,
+            count: documents.length,
+            message: 'Documents retrieved successfully'
+        });
+
+    } catch (error) {
+        console.error('Error retrieving documents:', error);
         res.status(500).json({ success: false, error: 'Server Error', details: error.message });
     }
 };
