@@ -141,3 +141,57 @@ exports.updateClaimStatus = async (req, res) => {
         res.status(500).json({ success: false, error: 'Server Error' });
     }
 };
+
+/**
+ * @desc    Send a demo email to test email notifications (development only)
+ * @route   POST /api/demo/send-email
+ * @access  Private
+ */
+exports.sendDemoEmail = async (req, res) => {
+    const { email, claimId, status, notes } = req.body;
+
+    // Validate input
+    if (!email) {
+        return res.status(400).json({ success: false, error: 'Email address required' });
+    }
+
+    try {
+        let emailResult;
+
+        if (status === 'clarification needed') {
+            emailResult = await emailService.sendClarificationRequest({
+                email,
+                claimId: claimId || 'DEMO-001',
+                clarificationNotes: notes || 'Please provide additional documentation for your travel expenses.'
+            });
+        } else {
+            emailResult = await emailService.sendStatusNotification({
+                email,
+                claimId: claimId || 'DEMO-001',
+                status: status || 'approved',
+                notes: notes || 'Your claim has been reviewed and processed.'
+            });
+        }
+
+        if (emailResult.success) {
+            res.status(200).json({
+                success: true,
+                message: `Demo email sent successfully to ${email}`,
+                emailDetails: {
+                    to: email,
+                    status: status || 'approved',
+                    claimId: claimId || 'DEMO-001'
+                }
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: 'Failed to send email',
+                details: emailResult.error
+            });
+        }
+    } catch (error) {
+        console.error('Error sending demo email:', error);
+        res.status(500).json({ success: false, error: 'Server Error', details: error.message });
+    }
+};
