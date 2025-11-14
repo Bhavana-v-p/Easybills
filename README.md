@@ -19,6 +19,63 @@ Endpoints
 
 - POST `/api/faculty/claims` - Submit a claim (body: `category`, `amount`, `description`, `dateIncurred`)
 - GET `/api/faculty/claims` - Get claims for the logged-in faculty user
+- PUT `/api/finance/claims/:id/status` - Update claim status and send notification (body: `status`, `notes`)
+- POST `/api/demo/send-email` - Send a demo email for testing (body: `email`, `claimId`, `status`, `notes`)
+
+### Email Notifications
+
+When a claim status changes, an email is automatically sent to the faculty member. Supported statuses:
+
+| Status | Email Type | Use Case |
+|--------|-----------|----------|
+| `submitted` | Submission confirmation | Sent when claim is first created |
+| `verified` | Status update | Finance team has verified the claim |
+| `approved` | Approval notification | Claim has been approved for payment |
+| `paid` | Payment confirmation | Reimbursement has been processed |
+| `clarification needed` | Action required | Additional info is needed from faculty |
+| `rejected` | Rejection notice | Claim has been rejected |
+
+### Testing Email Templates
+
+Use the demo endpoint to preview emails before they go live:
+
+```powershell
+# Test "approved" email
+curl -X POST http://localhost:3000/api/demo/send-email `
+  -H "Content-Type: application/json" `
+  -d '{"email":"test@gmail.com","claimId":"DEMO-001","status":"approved","notes":"Claim approved for reimbursement"}'
+
+# Test "clarification needed" email
+curl -X POST http://localhost:3000/api/demo/send-email `
+  -H "Content-Type: application/json" `
+  -d '{"email":"test@gmail.com","claimId":"DEMO-002","status":"clarification needed","notes":"Please provide itemized receipts"}'
+
+# Test "rejected" email
+curl -X POST http://localhost:3000/api/demo/send-email `
+  -H "Content-Type: application/json" `
+  -d '{"email":"test@gmail.com","claimId":"DEMO-003","status":"rejected","notes":"Claim does not meet policy requirements"}'
+```
+
+### Email Configuration
+
+Required `.env` variables for email:
+
+```
+EMAIL_SERVICE=gmail              # Service provider (gmail, sendgrid, aws-ses, etc.)
+EMAIL_USER=your-email@gmail.com  # Email account for sending
+EMAIL_PASSWORD=your-app-password  # App-specific password (NOT Gmail password)
+EMAIL_FROM=noreply@easybills.com # From address in emails
+```
+
+**For Gmail:**
+1. Enable 2-Step Verification in your Google Account
+2. Create an App Password (16 characters) in Account Security
+3. Use the App Password in `EMAIL_PASSWORD`
+
+**For other services:**
+- SendGrid: Use API key or SMTP credentials
+- AWS SES: Configure IAM credentials
+- Other SMTP: Use SMTP username/password
 
 Notes for developers
 
