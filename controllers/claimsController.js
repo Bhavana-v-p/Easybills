@@ -1,6 +1,8 @@
 // controllers/claimsController.js
 
 const ExpenseClaim = require('../models/Claim');
+const User = require('../models/User');
+const emailService = require('../services/emailService');
 
 /**
  * @desc    Submit a new expense claim
@@ -65,6 +67,77 @@ exports.getFacultyClaims = async (req, res) => {
         
     } catch (error) {
         console.error('Error fetching claims:', error);
+        res.status(500).json({ success: false, error: 'Server Error' });
+    }
+};
+
+/**
+ * @desc    Update claim status and send notification email
+ * @route   PUT /api/finance/claims/:id/status
+ * @access  Private (Finance/Admin)
+ */
+exports.updateClaimStatus = async (req, res) => {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    try {
+        const claim = await ExpenseClaim.findByPk(id);
+        if (!claim) {
+            return res.status(404).json({ success: false, error: 'Claim not found' });
+        }
+
+        // Get faculty user to retrieve email
+        const faculty = await User.findByPk(claim.facultyId);
+        if (!faculty) {
+            return res.status(404).json({ success: false, error: 'Faculty not found' });
+        }
+
+        // Update claim status
+        claim.status = status;
+        
+        // Add audit trail entry
+        const auditEntry = {
+            timestamp: new Date(),
+            status: status,
+            changedBy: req.user.role || 'Finance',
+            notes: notes || `Status changed to ${status}`
+        };
+        claim.auditTrail = claim.auditTrail || [];
+        claim.auditTrail.push(auditEntry);
+
+        await claim.save();
+
+        // Send email notification
+        if (faculty.email) {
+            let emailResult;
+            if (status === 'clarification needed') {
+                emailResult = await emailService.sendClarificationRequest({
+                    email: faculty.email,
+                    claimId: id,
+                    clarificationNotes: notes
+                });
+            } else {
+                emailResult = await emailService.sendStatusNotification({
+                    email: faculty.email,
+                    claimId: id,
+                    status: status,
+                    notes: notes
+                });
+            }
+
+            if (!emailResult.success) {
+                console.warn(`Email notification failed but claim updated for claim #${id}`);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            data: claim,
+            message: `Claim status updated to ${status} and notification sent.`
+        });
+
+    } catch (error) {
+        console.error('Error updating claim status:', error);
         res.status(500).json({ success: false, error: 'Server Error' });
     }
 };
