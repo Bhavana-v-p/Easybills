@@ -1,28 +1,68 @@
 # EasyBills
 
-Minimal Expense Claim Management API (development scaffold).
+Expense Claim Management System - Node.js/Express Backend with Vue.js Frontend Integration
 
-Getting started
+## Overview
 
-1. Install Node.js (LTS) from https://nodejs.org and ensure `node` and `npm` are in PATH.
-2. In project root:
+EasyBills is a complete expense claim management system designed for faculty members to submit, track, and manage reimbursement claims. The backend provides a robust REST API with email notifications and cloud file storage. The frontend is built with Vue.js 3 and follows Figma UI/UX designs.
 
-```powershell
-cd C:\Users\bhvp\Downloads\Easybills
+**Tech Stack:**
+- **Backend**: Node.js, Express.js, Sequelize ORM, PostgreSQL
+- **Frontend**: Vue.js 3, Vite, Pinia, Axios
+- **Authentication**: Google OAuth 2.0 via Passport.js
+- **File Storage**: Firebase Cloud Storage
+- **Email**: Nodemailer with HTML templates
+- **Database**: PostgreSQL with JSONB support
+
+## Quick Start
+
+### Backend Setup
+
+1. Install Node.js (LTS) from https://nodejs.org
+2. Clone repository and install dependencies:
+
+```bash
+cd Easybills
 npm install
 cp .env.example .env
-# Edit .env - set your PostgreSQL credentials and DB name
-node server.js
+# Edit .env with your database credentials and Google OAuth keys
+npm run dev  # Development server with hot-reload
+# or: npm start
 ```
 
-Endpoints
+Backend runs on `http://localhost:3000`
 
-- POST `/api/faculty/claims` - Submit a claim (body: `category`, `amount`, `description`, `dateIncurred`)
-- GET `/api/faculty/claims` - Get claims for the logged-in faculty user
-- POST `/api/faculty/claims/:id/documents` - Upload a document to a claim (multipart/form-data, field name: `document`)
-- GET `/api/faculty/claims/:id/documents` - List all documents for a claim
-- PUT `/api/finance/claims/:id/status` - Update claim status and send notification (body: `status`, `notes`)
-- POST `/api/demo/send-email` - Send a demo email for testing (body: `email`, `claimId`, `status`, `notes`)
+### Frontend Setup
+
+1. Create Vue.js project alongside backend:
+
+```bash
+npm create vue@latest easybills-frontend
+cd easybills-frontend
+npm install
+npm install axios pinia vue-router
+npm run dev  # Development server
+```
+
+Frontend runs on `http://localhost:5173`
+
+**Full integration guide**: See [FRONTEND_INTEGRATION.md](./FRONTEND_INTEGRATION.md)
+
+## API Documentation
+
+Complete API reference for frontend developers: [API_REFERENCE.md](./API_REFERENCE.md)
+
+### Key Endpoints
+
+- `GET /api/user/me` - Get current authenticated user
+- `POST /api/faculty/claims` - Submit expense claim
+- `GET /api/faculty/claims` - Get user's claims (with filtering & pagination)
+- `POST /api/faculty/claims/:id/documents` - Upload receipt/document
+- `GET /api/faculty/claims/:id/documents` - List claim documents
+- `PUT /api/finance/claims/:id/status` - Update claim status (Finance role)
+- `POST /api/demo/send-email` - Test email notifications
+
+Endpoints
 
 ### Email Notifications
 
