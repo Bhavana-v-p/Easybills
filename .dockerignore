@@ -6,4 +6,4 @@ npm-debug.log
 .git
 coverage
 logs
-*.log
+*log
