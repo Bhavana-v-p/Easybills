@@ -1,16 +1,34 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
+        // ----------------------------------------------------
+        // 1. FRONTEND DEBUGGING (Browser)
+        // ----------------------------------------------------
         {
             "type": "chrome",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
-            "url": "https://api.easybills.bits.ac.in",
+            "name": "Launch Frontend (Chrome)",
+            // **UPDATE THIS URL** to match your actual frontend server port 
+            // (e.g., 5173 for Vite, or 8080 if using a static server).
+            "url": "http://localhost:8080", 
             "webRoot": "${workspaceFolder}"
+        },
+        
+        // ----------------------------------------------------
+        // 2. BACKEND DEBUGGING (Node.js/Express)
+        // ----------------------------------------------------
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Attach to Node.js (Port 3000)",
+            // This port MUST match the port your Node.js server is listening on (PORT=3000 in .env)
+            "port": 9229, 
+            "restart": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            // You must start your server in debug mode first: `node --inspect server.js`
+            "preLaunchTask": "npm: dev" 
         }
     ]
 }
