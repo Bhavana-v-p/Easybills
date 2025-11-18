@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" ng-app="GCSApp">
+<!-- InstanceBegin template="/Templates/master.dwt" codeOutsideHTMLIsLocked="false" -->
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- InstanceBeginEditable name="doctitle" -->
+    <title>Global Claims System</title>
+
+    <!-- OneTrust Cookies Consent Notice start for <Your Productio application URL on Azure / QA By Sanjay on 21 Sep 2023> -->
+    <!--<script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js" type="text/javascript" charset="UTF-8" data-domain-script="f28c414e-ad65-4340-8ca6-a3245bfe0019-test"></script>-->
+    <!--<script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js" type="text/javascript" charset="UTF-8" data-domain-script="f28c414e-ad65-4340-8ca6-a3245bfe0019"></script>-->
+
+    <script type="text/javascript"
+        src="https://cdn.cookielaw.org/consent/8804cb43-fad1-4f62-9bc7-710614d5c349/OtAutoBlock.js"></script>
+    <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js" type="text/javascript" charset="UTF-8"
+        data-domain-script="8804cb43-fad1-4f62-9bc7-710614d5c349"></script>
+    <script type="text/javascript">
+        function OptanonWrapper() { }
+    </script>
+    <!-- OneTrust Cookies Consent Notice start for <Your staging application URL on Azure / QA By Sanjay on 21 Sep 2023> -->
+
+
+
+    <!-- InstanceEndEditable -->
+    <link href="newgcs/global/css/bootstrap.min.css" rel="stylesheet">
+    <!--<link href="newgcs/global/css/global.css?t=270520191148" rel="stylesheet">-->
+    <link href="newgcs/global/css/global.css?t=270520191301" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 sal/css/global.css" rel="upport of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="../global/js/html5shiv.min.js"></script>
+        <script src="../global/js/respond.min.js"></script>
+    <![endif]-->
+    <!-- InstanceBeginEditable name="head" -->
+    <!-- InstanceEndEditable -->
+    <!-- InstanceBeginEditable name="CustomCss" -->
+    <!--<link href="newgcs/local/css/local.css?t=170520181721" rel="stylesheet">-->
+    <link href="newgcs/local/css/header.css" rel="stylesheet" />
+    <script src="newgcs/local/js/header.js"></script>
+    <link href="newgcs/local/css/dropzone.css?t=270520191301" rel="stylesheet">
+    <style>
+        .export {
+            display: none;
+        }
+
+        .landingimg {
+            width: 120px;
+        }
+    </style>
+    <!-- InstanceEndEditable -->
+    <!-- InstanceParam name="for Scroll" type="boolean" value="true" -->
+    <!-- InstanceParam name="Footer" type="boolean" value="true" -->
+    <!-- JavaScript Placed at the end of the document so the pages load faster -->
+    <script src="newgcs/global/js/jquery.min.js"></script>
+    <script src="newgcs/global/js/bootstrap.min.js"></script>
+    <script src="newgcs/local/js/angular.min.js"></script>
+    <script src="newgcs/local/js/angular-route.min.js"></script>
+    <script src="newgcs/local/js/angular-datatables.min.js"></script>
+    <script src="newgcs/local/js/angular-sanitize.min.js"></script>
+    <script src="newgcs/local/js/jquery.validate.js?t=270520191301"></script>
+    <script src="newgcs/local/js/underscore-min.js"></script>
+
+    <script src="newgcs/local/js/alasql.min.js"></script>
+    <script src="newgcs/global/js/global.js?t=270520191301"></script>
+    <script src="newgcs/local/js/local.js?t=270520191301"></script>
+    <script src="newgcs/local/js/dropzone.min.js?t=270520191301"></script>
+
+    <!--<script src="local/popup/global.js?t=270520191149"></script>
+    <script src="local/popup/local.js?t=270520191148"></script>-->
+    <!-- InstanceBeginEditable name="customScript" -->
+
+
+
+    <script src="newgcs/local/js/services.js?t=270520191301"></script>
+    <script src="newgcs/local/js/main.js?t=270520191301"></script>
+    <!--<script src="newgcs/local/js/controller.js"></script>-->
+    <!--added the service  for approver screen begin-->
+    <script src="newgcs/local/js/ApproverService.js?t=270520191301"></script>
+    <!--added the service  for approver screen end-->
+    <!--added the service  for New Cash Claim screen start-->
+    <script src="newgcs/local/js/CashClaimService.js?t=270520191301"></script>
+    <!--added the service  for New Cash Claim screen end-->
+    <!--added the service  for Advance Settlement screen start-->
+    <script src="newgcs/local/js/AdvanceSettlementService.js?t=270520191301"></script>
+    <!--added the service  for Advance Settlement screen end-->
+    <!--added the service  for New Cash Claim screen start-->
+    <!--<script src="newgcs/local/js/CashClaimService.js"></script>-->
+    <!--added the service  for New Cash Claim screen end-->
+    <!--added the service  for New Cash Claim screen end-->
+
+    <script src="newgcs/local/js/FlexiClaimController.js?t=270520191301"></script>
+    <script src="newgcs/local/js/ViewCashController.js?t=270520191301"></script>
+    <!--added the controller  for approver screen begin-->
+    <script src="newgcs/local/js/ApproverController.js?t=270520191301"></script>
+    <!--added the controller  for approver screen end-->
+    <!--added the controller  for Advance Settlement screen begin-->
+    <script src="newgcs/local/js/AdvanceSettlementController.js?t=270520191301"></script>
+    <!--added the controller  for Advance Settlement screen end-->
+    <!--added the Controller  for New CAsh Claim screen start-->
+
+    <script src="newgcs/local/js/CashClaimController.js?t=270520191301"></script>
+    <!--<script src="newgcs/local/js/CashClaimController.js"></script>-->
+    <script src="newgcs/local/js/NewFlexiController.js?t=270520191301"></script>
+    <script src="newgcs/local/js/NewDelegationController.js?t=270520191301"></script>
+    <!-- InstanceEndEditable -->
+
+
+    <script>
+        $(document).ready(function () {
+            $("#feedback").click(function () {
+                $('.splash-screen').removeClass('hide').addClass('show');
+                $('body').removeClass('overflow-n').addClass('overflow');
+                $("#feedSuccess").stop().slideDown();
+                $('#feedSuccess').delay(3000).slideUp('500', function () {
+                    $('.splash-screen').removeClass('show').addClass('hide');
+                    $('body').removeClass('overflow').addClass('overflow-n');
+                    $(location).attr('href', 'index.htm');
+                });
+            });
+            $('.glb-pnl-role li').click(function () {
+                $(".glb-pnl-role li").removeClass("active_li");
+                $(this).addClass('active_li');
+            });
+            $('.glb-pnl-role li').click(function () {
+                var txt = $(this).text();
+                $('.role').html(txt);
+            });
+        });
+    </script>
+
+</head>
+
+<body>
+    <!-- /.Header Start Here -->
+    <div ng-show="showLoader" class="go_spiner nolms">
+        <div class="loader2 material-spinner"></div>
+    </div>
+    <div ng-show="showLoader" class="splash-screen loader_splesh"></div>
+
+    <header class="glb-header-outer">
+        <!-- /.Nav Start Here -->
+        <!-- /.Nav Ends Here -->
+        <!-- /New .Nav Start Here -->
+        <!--<nav class="navbar navbar-expand-md fixed-top ds-hd-nav navbar-default navbar-fixed-top glb-header-inner">-->
+        <nav class="navbar navbar-expand-md fixed-top ds-hd-nav">
+            <div class="container-fluid">
+                <div class="ds-hd-logo-sec">
+                    <a class="ds-hd-logo" href="https://www.myhcl.com/"> <span class="sr-only">Brand Logo</span> <img
+                            src="global/images/hcltech.svg" alt="HCLTech"></a>
+                    <!--<a class="ds-hd-app" href="index.html">Global Claims System</a>-->
+                    <a class="ds-hd-app" href="#!/home">Global Claims System</a>
+                    <button class="navbar-toggle collapsed" type="button" data-toggle="collapse"
+                        data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+
+                <div class="collapse navbar-collapse" id="navbarCollapse">
+                    <ul class="ds-hd-right">
+                        <!--<li class="ds-hd-notification dropdown keep-inside-clicks-open">
+                            <button data-toggle="dropdown" class="btn btn-secondary dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                <i class="hdr-notification"></i>
+                                <span class="ds-hd-count"></span>
+                                <span class="visually-hidden">Notifications</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end ds-hd-notify">
+                                <h4 class="ds-hd-heading">Notifications (04)</h4>
+                                <p class="ds-hd-nothead">Today</p>
+                                <ul class="ds-hd-role">
+                                    <li><a href="#">Notifications will visible here - 1</a></li>
+                                    <li><a href="#">Notifications will visible here - 2</a></li>
+                                </ul>
+                                <p class="ds-hd-nothead">Older</p>
+                                <ul class="ds-hd-role">
+                                    <li><a href="#">Notifications will visible here - 1</a></li>
+                                    <li><a href="#">Notifications will visible here - 2</a></li>
+                                </ul>
+                            </div>
+                        </li>-->
+                        <li>
+                            <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="modal"
+                                data-target="#feedbackModal" ng-click="ShowFeedBackPopup();">
+                                <i class="hdr-feedback"></i>
+                                <span class="visually-hidden">Feedback</span>
+                            </button>
+                        </li>
+                        <li class="dropdown keep-inside-clicks-open">
+                            <button data-toggle="dropdown" class="btn btn-secondary dropdown-toggle" type="button"
+                                aria-expanded="false">
+                                <i class="hdr-help"></i>
+                                <span class="visually-hidden">Help</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end ds-hd-favorite">
+                                <h4 class="ds-hd-heading">Help Center</h4>
+                                <ul class="ds-hd-tophelp">
+                                    <li><a target="_blank" href="Include/GCSPPT.pptx"><i class="hdr-ppt"></i>Application
+                                            PPT</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <!--<li class="dropdown keep-inside-clicks-open">
+                            <button data-toggle="dropdown" class="btn btn-secondary dropdown-toggle" type="button" aria-expanded="false">
+                                <i class="hdr-myFav"></i>
+                                <span class="visually-hidden">Favorites</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end ds-hd-favorite">
+                                <h4 class="ds-hd-heading">My Favourites <a href="https://www.myhcl.com/bprhome/Webpages/ManageFavourites.aspx" class="ds-hd-favedit"> <span class="sr-only">Edit favorite menu Button</span> <i class="hdr-edit"></i></a></h4>
+                                <ul class="ds-hd-role ds-hd-favrole">
+                                    
+                                    
+                                    <li ng-repeat="Application in FavLinks">
+                                   <a href="{{Application.NavigationURL}}"><i class={{Application.Class}}></i>{{Application.ApplicationName}}</a>-->
+                        <!-- <a href="{{Application.NavigationURL}}">
+                                            <span class="{{Application.Class}} glb-pnl-myFv-box1-ico"></span>
+                                            <span ng-bind="Application.ApplicationName"></span>
+                                        </a>-->
+                        <!--</li>-->
+
+                        <!-- <li><a href="#"><i class="hdr-iTime"></i>iTime (Time Sheet Management System)</a></li>
+                                    <li><a href="#"><i class="hdr-lms"></i>India LMS</a></li>
+                                    <li><a href="#"><i class="hdr-iBridge"></i>iBridge</a></li>
+                                    <li><a href="#"><i class="hdr-gcs"></i>Global Claims System</a></li>
+                                    <li><a href="#"><i class="hdr-transportal"></i>Transportal</a></li>
+                                    <li><a href="#"><i class="hdr-tas"></i>My Travel (TAS)</a></li>
+                                    <li><a href="#"><i class="hdr-hclToday"></i>HCL Today</a></li>
+                                    <li><a href="#"><i class="hdr-myApproval"></i>My Approvals</a></li>
+                                    <li><a href="#"><i class="hdr-smartSurvey"></i>360 Degree - Smart Survey</a></li>
+                                    <li><a href="#"><i class="hdr-ssd"></i>Smart Service Desk (SSD)</a></li>-->
+                        <!--</ul>
+                            </div>
+                        </li>-->
+                        <li class="dropdown keep-inside-clicks-open">
+                            <button data-toggle="dropdown" class="btn btn-secondary dropdown-toggle" type="button"
+                                aria-expanded="false">
+                                <i class="hdr-internal-nav"></i>
+                                <span class="visually-hidden">Internal Nav</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end ds-hd-navmenu">
+                                <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="false">
+                                    <div class="accordion-item panel panel-default"
+                                        ng-repeat="(key, value) in MenuData">
+                                        <div class="panel-heading" role="tab" id="heading_{{$index}}">
+                                            <h4 class="panel-title">
+                                                <a class="accordion-button" role="button" data-toggle="collapse"
+                                                    data-parent="#accordion" href="#collapse_{{$index}}"
+                                                    aria-expanded="true" aria-selected="false"
+                                                    aria-controls="collapse_{{$index}}">
+                                                    {{key}} <!--ES India-->
+                                                </a>
+                                            </h4>
+                                        </div>
+                                        <div id="collapse_{{$index}}" class="panel-collapse collapse in" role="tabpanel"
+                                            aria-labelledby="heading_{{$index}}">
+                                            <div class="accordion-body">
+                                                <ul class="ds-hd-role">
+                                                    <li ng-repeat="MenuItem in value"><a href="{{MenuItem.URL}}"
+                                                            class="ng-binding">{{MenuItem.MenuDisplayName}}</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                    <!--<div class="accordion-item panel panel-default">
+                                        <div class="panel-heading" role="tab" id="headingOne">
+                                            <h4 class="panel-title">
+                                                <a class="accordion-button" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                                    ES India
+                                                </a>
+                                            </h4>
+                                        </div>
+                                        <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                                            <div class="accordion-body">
+                                                <ul class="ds-hd-role">
+                                                    <li><a href="#">Pending Action</a></li>
+                                                    <li><a href="#">Flexi Details</a></li>
+                                                    <li><a href="#">Update Voucher(WBC/CC)</a></li>
+                                                    <li><a href="#">Settle Vouchers</a></li>
+                                                    <li><a href="#">Cell Phone Entitlement </a></li>
+                                                    <li><a href="#">SAP Upload CorpCard </a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="accordion-item panel panel-default">
+                                        <div class="panel-heading" role="tab" id="headingTwo">
+                                            <h4 class="panel-title">
+                                                <a class="accordion-button collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                                    New Claim
+                                                </a>
+                                            </h4>
+                                        </div>
+                                        <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
+                                            <div class="accordion-body">
+                                                <ul class="ds-hd-role">
+                                                    <li><a href="#">New Cash Claim </a></li>
+                                                    <li><a href="#">New Flexi Claim</a></li>
+                                                    <li><a href="#">New Travel Claim</a></li>
+                                                    <li><a href="#">Travel-Forex Refund Request</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="accordion-item panel panel-default">
+                                        <div class="panel-heading" role="tab" id="headingThree">
+                                            <h4 class="panel-title">
+                                                <a class="accordion-button collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                                    ES India Reports
+                                                </a>
+                                            </h4>
+                                        </div>
+                                        <div id="collapseThree" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+                                            <div class="accordion-body">
+                                                <ul class="ds-hd-role">
+                                                    <li><a href="#">Cell Phone Entitlement </a></li>
+                                                    <li><a href="#">SAP Upload </a></li>
+                                                    <li><a href="#">Transport Report </a></li>
+                                                    <li><a href="#">SAP Upload Report </a></li>
+                                                    <li><a href="#">Ageing Report </a></li>
+                                                    <li><a href="#">Expense Report </a></li>
+                                                    <li><a href="#">Advance Settlement Report </a></li>
+                                                    <li><a href="#">Advance Settlement Expense Report </a></li>
+                                                    <li><a href="#">Periodic Net Transfer Report </a></li>
+                                                    <li><a href="#">OffCycleUtility </a></li>
+                                                    <li><a href="#">Relocation bond report </a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="accordion-item panel panel-default">
+                                        <div class="panel-heading" role="tab" id="headingFour">
+                                            <h4 class="panel-title">
+                                                <a class="accordion-button collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                                    ES Corp Card
+                                                </a>
+                                            </h4>
+                                        </div>
+                                        <div id="collapseFour" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingFour">
+                                            <div class="accordion-body">
+                                                <ul class="ds-hd-role">
+                                                    <li><a href="#"> Card Billing Cycle</a></li>
+                                                    <li><a href="#"> Card Issuance Summary</a></li>
+                                                    <li><a href="#"> Card Initiation</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>-->
+
+
+                                </div>
+
+                            </div>
+                        </li>
+                        <li class="ds-hd-empsec dropdown keep-inside-clicks-open">
+                            <button data-toggle="dropdown" class="btn btn-secondary dropdown-toggle" type="button"
+                                aria-expanded="false">
+                                <!--<span class="ds-hd-sap">51678907</span>
+                                <span class="ds-hd-name">RV</span>-->
+                                <span class="ds-hd-sap">{{_objCommon.EmpCode}}</span>
+                                <span class="ds-hd-name">{{shortname}}</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end ds-hd-empd">
+                                <div class="ds-hd-fullempname">
+                                    <!--<h5>Rahul Venketwara Narayan</h5>
+                                    <p>51678907<span class="ds-hd-emprole">Technical Manager</span></p>-->
+                                    <h5>{{_objCommon.EMFirstName}}</h5>
+                                    <!--<h5>{{fullName}}</h5>-->
+                                    <p>{{_objCommon.EmpCode}}<span class="ds-hd-emprole">{{_objCommon.EMDesig}}</span>
+                                    </p>
+                                    <!--<h2>{{_objCommon.EMFirstName}}</h2>
+                                    <p>{{_objCommon.EMDesig}}</p>-->
+                                </div>
+
+                                <!-- Add by Sanjay for Deligation-->
+                                <a ng-if="_objGCS.isOnBehalf()" ng-click="EndBehalfOf();" href="javascript:void(0);">
+                                    <strong>
+                                        End on behalf of<br />
+                                    </strong>
+                                    {{_objCommon.DelegatorEmpName}} ({{_objCommon.DelegatorEmpCode}})
+                                </a>
+                                <!-- Add by Sanjay for Deligation -->
+
+                                <button type="button" class="ds-hd-logout" href="javascript:void(0);"
+                                    ng-click="LogOut();">Logout <i class="hdr-logOut"></i></button>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- /New .Nav Start Here -->
+    </header>
+
+    <div ng-view></div>
+
+    <div class="approval_status mulCurrency">
+        <div class="currency-preview">
+            <ul id="lstMultiCurrency">
+                <li><span class="currenct-type">Loading...</span><span class="currenct-value">Loading...</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- /.Footer Start Here -->
+    <footer class="ds-ft-footer" style="position:absolute; left:0; right:0; bottom:0;">
+        <p class="ds-ft-webspecify">Best viewed on the latest versions of MS Edge, Chrome or Safari.</p>
+        <img src="newgcs/global/images/hcl.svg" alt="hcl" />
+        <input class="" type="text" id="hdnEmpSAP_ID" value="" style="display:none">
+        <input class="" type="text" id="hdnEncEmpSAP_ID" value="" style="display:none">
+    </footer>
+
+    <!--<footer class="glb-footer">-->
+    <!--Added for Delegation Concept by Mdu Team 13'Dec 2018 Begin-->
+    <!--<img src="newgcs/global/images/hcl_logo.png" alt="HCL Logo">
+        <input class="" type="text" id="hdnEmpSAP_ID" value="" style="display:none">
+        <input class="" type="text" id="hdnEncEmpSAP_ID" value="" style="display:none">-->
+    <!--Added for Delegation Concept by Mdu Team 13'Dec 2018 End-->
+    <!--</footer>-->
+
+    <!--<script src="local/js/local.js"></script>
+    <script src="local/js/header.js"></script>-->
+    <!-- /.Footer Ends Here -->
+    <!-- Popup Start Here-->
+    <!-- /.Feedback Model Start Here -->
+    <div class="modal fade glb-feedbackModal" role="dialog">
+        <div class="modal-dialog glb-mw-lg">
+            <div class="modal-content">
+                <div class="modal-header glb-mw-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Feedback</h4>
+                </div>
+                <div class="modal-body glb-mw-fdbk-outer">
+                    <select id="example-fontawesome" name="rating">
+                        <option value="Poor">Poor</option>
+                        <option value="Below Average">Below Average</option>
+                        <option value="Average" selected>Average</option>
+                        <option value="Good">Good</option>
+                        <option value="Excellent">Excellent</option>
+                    </select>
+                    <h2 id="showRating">Average</h2>
+                    <textarea class="form-control glb-mw-fdbk-Textarea" rows="5"
+                        placeholder="Provide your remarks here"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <span class="glb-btn glb-margin0">
+                        <button class="btn primary-button" data-dismiss="modal" id="feedback"
+                            type="submit">Submit</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /.Feedback Model Ends Here -->
+    <!-- /.feedback Succecc Model Start Here -->
+    <div class="glb-alert-success" id="feedSuccess"><span class="pop">Thanks! Your feedback has been submitted
+            successfully.</span> <span class="close_pop icon-close" id="close_pop"
+            onclick="location.href = 'index.html'"></span></div>
+    <div class="splash-screen hide"></div>
+    <!-- /.feedback Succecc Model Ends Here -->
+    <!-- InstanceBeginEditable name="PopUp" -->
+    <!-- /.Succecc Model Start Here -->
+    <div class="glb-alert-success" id="success_model">
+        <span class="pop">Your claims have been actioned successfully.</span>
+        <div class="close_pop"><span class="icon-close"></span></div>
+    </div>
+    <!-- /.Succecc Model Ends Here -->
+
+
+    <div class="glb-alert-success error-alert" id="action_message">
+        <!--<span class="gcs-pending error-image"></span> Comment for popup image on 01-02-2019 by keshri-->
+        <!--<span class="pop suc-record" style="font-size: 20px;">14 Records Approved Successfully</span> -->
+        <span ng-repeat="ActionMessage in ActionMessages" class="pop suc-record" style="font-size: 20px;"
+            ng-bind-html="ActionMessage"></span>
+        <!--<span class="error-message">Action already taken for <strong>15461121/156</strong></span> -->
+        <span ng-repeat="Message in ErrorMessages" class="error-message" ng-bind-html="Message"></span>
+        <div class="close_pop"><span class="icon-close"></span></div>
+    </div>
+
+
+    <!-- /.Status Model start Here -->
+    <!--<div class="modal fade" id="exception" role="dialog">
+        <div class="modal-dialog glb-mw-xl">
+            <div class="modal-content">
+                <div class="modal-header glb-mw-header">
+                    <button type="button" class="close" data-dismiss="modal">×</button>
+                    <h4 class="modal-title">Exception Approval</h4>
+                </div>
+                <div class="modal-body exception-approval">
+                    <div class="detailsList">
+                        <ul>
+                            <li>
+                                <div class="detLabel">Claim Number : </div>
+                                <div class="detValue">&nbsp; {{TECClaimMaster[0].VoucherNumber}}</div>
+                            </li>
+                            <li>
+                                <div class="detLabel">Requester Name : </div>
+                                <div class="detValue elips elips-new">&nbsp; {{TECClaimMaster[0].EmFirstName}}</div>
+                            </li>
+                            <li>
+                                <div class="detLabel">SAP Code : </div>
+                                <div class="detValue">&nbsp; {{TECClaimMaster[0].CMEmpCode}}</div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="exceptional">
+                        <table class="table exce-tbl">
+                            <thead>
+                                <tr>
+                                    <th>Itinerary </th>
+                                    <th>Expense Category</th>
+                                    <th class="text-right">Claimed Amount</th>
+                                    <th class="text-right">Exceptional Amount</th>
+                                    <th class="text-right">Entitlement Amount</th>
+                                    <th class="text-right">Approve Exception</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-show="ExceptionDetail.ShowExp || !TECClaimException.ShowAllTECExp" ng-repeat-start="ExceptionDetail in TECClaimException">
+                                    <td><span ng-bind="ExceptionDetail.ItineraryName"></span></td>
+                                    <td><span ng-bind="ExceptionDetail.ExpenseCategory"></span></td>
+                                    <td class="text-right" ng-class="ExceptionDetail.IsColoredException"><span ng-bind="ExceptionDetail.CUR_Currency+' '+ExceptionDetail.ClaimedAmount"></span></td>
+                                    <td class="text-right" ng-class="ExceptionDetail.IsColoredException"><span ng-bind="ExceptionDetail.CUR_Currency+' '+ExceptionDetail.ExceptionAmount"></span></td>
+                                    <td class="text-right"><span ng-bind="ExceptionDetail.CUR_Currency+' '+ExceptionDetail.EntitlementAmount"></span></td>
+                                    <td rowspan="3" class="text-right appAmount">
+
+                                        <input type="text" ng-if="ExceptionDetail.IsTextBoxVisible" ng-model="ExceptionDetail.ExceptionApprovedbyApprover" class="excepAmount" valid-number>
+                                    </td>
+                                </tr>
+                                <tr ng-show="ExceptionDetail.ShowExp || !TECClaimException.ShowAllTECExp" class="ex-secTr">
+                                    <th>Exception Reason :</th>
+                                    <td colspan="5"><span ng-bind="ExceptionDetail.HighlightedRemarks"></span></td>
+                                </tr>
+                                <tr ng-show="ExceptionDetail.ShowExp || !TECClaimException.ShowAllTECExp" class="ex-secTrlast" ng-repeat-end>
+                                    <th>ES Remarks :</th>
+                                    <td colspan="5"><span ng-bind="ExceptionDetail.ExpenseRemarks"></span></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="6" class="text-left appAmount">
+                                        <div style="z-index: 100" class="checkbox declareText flot_right">
+                                            <label class="raised">
+                                                <input type="checkbox" id="checkbox1" ng-click="TECClaimException.ShowAllTECExp = !TECClaimException.ShowAllTECExp" name="check">
+                                                <i>Entire Exception</i>
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <span class="glb-btn expButton">
+                        <span class="btn primary-button" id="appException" ng-click="TECExpClaimsAction('Approve');">Approve</span>
+                        <span class="btn secondry-button" id="referException" ng-click="TECExpClaimsAction('ReferBack');">Refer Back</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>-->
+
+    <div class="modal fade" id="exception" role="dialog">
+        <div class="modal-dialog glb-mw-xl">
+            <div class="modal-content">
+                <div class="modal-header glb-mw-header">
+                    <button type="button" class="close" data-dismiss="modal">×</button>
+                    <h4 class="modal-title">Exception Approval</h4>
+                </div>
+                <div class="modal-body exception-approval">
+                    <div class="detailsList">
+                        <ul>
+                            <li>
+                                <div class="detLabel">Claim Number : </div>
+                                <div class="detValue">&nbsp; {{TECClaimMaster[0].VoucherNumber}}</div>
+                            </li>
+                            <li>
+                                <div class="detLabel">Requester Name : </div>
+                                <div class="detValue elips elips-new">&nbsp; {{TECClaimMaster[0].EmFirstName}}</div>
+                            </li>
+                            <li>
+                                <div class="detLabel">SAP Code : </div>
+                                <div class="detValue">&nbsp; {{TECClaimMaster[0].CMEmpCode}}</div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="exceptional">
+                        <table class="table exce-tbl">
+                            <thead>
+                                <tr>
+                                    <th>Itinerary </th>
+                                    <th>Expense Category</th>
+                                    <th class="text-right">Claimed Amount</th>
+                                    <th class="text-right">Exceptional Amount</th>
+                                    <th class="text-right">Entitlement Amount</th>
+                                    <th class="text-right">Approve Exception</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-show="ExceptionDetail.ShowExp || TECClaimException.ShowAllTECExp"
+                                    ng-repeat-start="ExceptionDetail in TECClaimException">
+                                    <td><span ng-bind="ExceptionDetail.ItineraryName"></span></td>
+                                    <td><span ng-bind="ExceptionDetail.ExpenseCategory"></span></td>
+                                    <td class="text-right" ng-class="ExceptionDetail.IsColoredException"><span
+                                            ng-if="ExceptionDetail.ClaimedAmount >= 0"
+                                            ng-bind="ExceptionDetail.CUR_Currency+' '+ExceptionDetail.ClaimedAmount"></span>
+                                        <span ng-if="ExceptionDetail.ClaimedAmount < 0">-</span></td>
+                                    <td class="text-right" ng-class="ExceptionDetail.IsColoredException"><span
+                                            ng-if="ExceptionDetail.ExceptionAmount >= 0"
+                                            ng-bind="ExceptionDetail.CUR_Currency+' '+ExceptionDetail.ExceptionAmount"></span><span
+                                            ng-if="ExceptionDetail.ExceptionAmount < 0">-</span></td>
+                                    <td class="text-right"><span ng-if="ExceptionDetail.EntitlementAmount >= 0"
+                                            ng-bind="ExceptionDetail.CUR_Currency+' '+ExceptionDetail.EntitlementAmount"></span>
+                                        <span ng-if="ExceptionDetail.EntitlementAmount < 0">-</span></td>
+                                    <td rowspan="3" class="text-right appAmount">
+                                        <input type="text" ng-if="ExceptionDetail.IsTextBoxVisible"
+                                            ng-model="ExceptionDetail.ExceptionApprovedbyApprover" class="excepAmount"
+                                            valid-number>
+                                    </td>
+                                </tr>
+                                <tr ng-show="ExceptionDetail.ShowExp || TECClaimException.ShowAllTECExp"
+                                    class="ex-secTr">
+                                    <th>Exception Reason :</th>
+                                    <td colspan="5"><span ng-bind="ExceptionDetail.HighlightedRemarks"></span></td>
+                                </tr>
+                                <tr ng-show="ExceptionDetail.ShowExp || TECClaimException.ShowAllTECExp"
+                                    class="ex-secTrlast" ng-repeat-end>
+                                    <th>ES Remarks :</th>
+                                    <td colspan="5"><span ng-bind="ExceptionDetail.ExpenseRemarks"></span></td>
+                                </tr>
+                                <tr ng-hide="TECClaimMaster[0].PendingwithRole == 'AAM' ">
+                                    <td colspan="6" class="text-left appAmount">
+                                        <div style="z-index: 100" class="checkbox declareText flot_left">
+                                            <label class="raised">
+                                                <input type="checkbox" id="checkbox1"
+                                                    ng-checked="TECClaimException.ShowAllTECExp"
+                                                    ng-click="TECClaimException.ShowAllTECExp = !TECClaimException.ShowAllTECExp"
+                                                    name="check">
+                                                <i> Show all expenses</i>
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <span class="glb-btn expButton">
+                        <span class="btn primary-button" id="appException"
+                            ng-click="TECExpClaimsAction('Approve');">Approve</span>
+                        <span class="btn secondry-button" id="referException"
+                            ng-click="TECExpClaimsAction('ReferBack');">Refer Back</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="my_splesh"></div>
+    <!-- /.Status Model ends Here -->
+    <!-- Scripts moved from here -->
+    <div id="Advance_splash" class="splash-screen loader_splesh hide"></div>
+</body>
+
+</html>
+
+
+
+<!--<div class="modal fade obtSupportG" id="modelpopupforCovid" style="margin-left:-15%;">
+    <div class="modal-dialog">-->
+<!--Modal content-->
+<!--<div class="modal-content">
+            <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>-->
+<!--Change by pratap-->
+<!--<td height="470" align="center" valign="top" bgcolor="#F5F5F5"><a href="https://hclo365.sharepoint.com/sites/SAPConcurLearningHub/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FSAPConcurLearningHub%2FShared%20Documents%2FWave%203%20%28Rest%20of%20the%20World%29%2FCTA%20Documents%20for%20Banner%2FMyClaim%20Wave%203%20%2D%20Cut%20Over%20Dates%2Epng&parent=%2Fsites%2FSAPConcurLearningHub%2FShared%20Documents%2FWave%203%20%28Rest%20of%20the%20World%29%2FCTA%20Documents%20for%20Banner&OR=Teams%2DHL&CT=1687241889319&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiIyNy8yMzA1MDEwMDQyMiIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D" target="_blank"><img src="newgcs/local/images/MyClaim Wave 3 - GCS Pop-up.PNG " width="800" height="470" alt="" /></a></td>
+                    </tr>
+                    <tr>
+                        <td height="20" align="center" bgcolor="#F5F5F5"><a href="#" data-dismiss="modal"><img src="newgcs/local/images/Covid-SkipButton.jpg" width="169" height="36" alt="" /></a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>-->
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        if ((sessionStorage.getItem("CovidFirstTime") == null || sessionStorage.getItem("CovidFirstTime") == "")) {
+            sessionStorage.setItem("CovidFirstTime", "CovidFirstTime");
+            if (window.location.href.split('/')[4] == 'home') {
+                $('#modelpopupforCovid').modal('show');
+            }
+            else {
+                $('#modelpopupforCovid').modal('hide');
+
+            }
+        }
+        //$('#modelpopupforCovid').modal('show');
+    })
+</script>
