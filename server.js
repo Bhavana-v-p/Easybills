@@ -7,6 +7,9 @@ const claimsRoutes = require('./routes/claims');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 
+// Load environment variables immediately
+dotenv.config(); // ADDED: Load environment variables
+
 const app = express();
 
 // CORS Configuration for Vue.js Frontend
