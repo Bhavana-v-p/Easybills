@@ -4,6 +4,8 @@
  * Email templates for claim status notifications
  * Each template returns HTML content for the email body
  */
+const BASE_URL = 'https://easybills.bits.ac.in'; // Production Frontend URL
+
 
 exports.statusChangeTemplate = (claimId, status, notes) => {
   const statusColors = {
