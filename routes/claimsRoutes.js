@@ -1,11 +1,16 @@
-// routes/claimsRoutes.js (Update POST route)
-
+const express = require('express');
+const router = express.Router();
 const { multerUpload, uploadToFirebase } = require('../middleware/uploadMiddleware');
+const { submitClaim } = require('../controllers/claimsController');
 
-// ... (other routes)
+// Assume 'protect' is an authentication middleware you have elsewhere.
+// If you don't have it, you can remove it for now.
+// const { protect } = require('../middleware/authMiddleware');
 
-// POST /api/faculty/claims - Enables claim submission and file upload
-// Runs in sequence: 1. Auth check, 2. Multer parses form, 3. Uploads to Firebase, 4. Calls controller
-router.route('/claims').post(protect, multerUpload, uploadToFirebase, submitClaim); 
+// @route   POST /api/claims
+// @desc    Create a new expense claim
+// @access  Private (once 'protect' is added)
+router.post('/', multerUpload, uploadToFirebase, submitClaim);
+// router.post('/', protect, multerUpload, uploadToFirebase, submitClaim); // With auth
 
-// ...
+module.exports = router;
