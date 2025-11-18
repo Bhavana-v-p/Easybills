@@ -10,7 +10,7 @@
             "name": "Launch Frontend (Chrome)",
             // **UPDATE THIS URL** to match your actual frontend server port 
             // (e.g., 5173 for Vite, or 8080 if using a static server).
-            "url": "http://localhost:8080", 
+            "url": "https://easybills.bits.ac.in", 
             "webRoot": "${workspaceFolder}"
         },
         
