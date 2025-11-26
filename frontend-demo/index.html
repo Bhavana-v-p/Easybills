@@ -34,7 +34,7 @@
       if (!userId) return alert('Enter a user id to join');
 
       // Connect to backend Socket.io server (adjust origin if needed)
-      socket = io('https://api.easybills.bits.ac.in', { // <--- Production API Link
+      socket = io('http://localhost:5173', { // <--- Production API Link
         withCredentials: true
       });
 
