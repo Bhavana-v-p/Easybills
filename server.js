@@ -1,6 +1,7 @@
 // server.js
 
 const express = require('express');
+const dotenv = require('dotenv'); // <--- ADDED: Required for line 12
 const cors = require('cors');
 const { connectDB } = require('./config/db');
 const claimsRoutes = require('./routes/claims');
@@ -8,14 +9,14 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 
 // Load environment variables immediately
-dotenv.config(); // ADDED: Load environment variables
+dotenv.config(); 
 
 const app = express();
 
 // CORS Configuration for Vue.js Frontend
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Vue.js dev server default
-    credentials: true, // Allow cookies for sessions
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
+    credentials: true, 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
@@ -36,9 +37,9 @@ app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Authentication middleware (uses session passport info)
+// Authentication middleware import
 const auth = require('./middleware/auth');
-app.use(auth);
+// REMOVED: app.use(auth);  <--- DELETED GLOBAL AUTH (It blocks login!)
 
 // Connect to database
 connectDB().catch((err) => {
@@ -47,9 +48,9 @@ connectDB().catch((err) => {
 });
 
 // Routes
-app.use('/api', claimsRoutes);
-app.use('/auth', authRoutes);
-app.use('/api/user', userRoutes);
+app.use('/auth', authRoutes); // Public: Allow access to login routes
+app.use('/api', auth, claimsRoutes); // Protected: Apply auth middleware here
+app.use('/api/user', auth, userRoutes); // Protected: Apply auth middleware here
 
 // Health check endpoint
 app.get('/health', (req, res) => {
