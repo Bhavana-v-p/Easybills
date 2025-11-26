@@ -3,6 +3,7 @@
 const express = require('express');
 const dotenv = require('dotenv'); // <--- ADDED: Required for line 12
 const cors = require('cors');
+const path = require('path');
 const { connectDB } = require('./config/db');
 const claimsRoutes = require('./routes/claims');
 const authRoutes = require('./routes/auth');
