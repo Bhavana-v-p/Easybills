@@ -1,55 +1,48 @@
 // config/passport.js
-
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('../models/User');
-
-const allowedDomain = process.env.GOOGLE_ALLOWED_DOMAIN; // e.g., 'bits-pilani.ac.in'
-
-// Startup debug: log presence of required Google auth env vars (do not print secrets)
-console.log('Google OAuth config:');
-console.log(' - GOOGLE_CLIENT_ID present:', !!process.env.GOOGLE_CLIENT_ID);
-console.log(' - GOOGLE_CLIENT_SECRET present:', !!process.env.GOOGLE_CLIENT_SECRET);
-console.log(' - GOOGLE_CALLBACK_URL:', !!process.env.GOOGLE_CALLBACK_URL);
-console.log(' - GOOGLE_ALLOWED_DOMAIN:', !!process.env.GOOGLE_ALLOWED_DOMAIN);
-
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL || '/auth/google/callback'
-},
-async (accessToken, refreshToken, profile, done) => {
-  try {
-    const email = (profile.emails && profile.emails[0] && profile.emails[0].value) || '';
-    const domain = email.split('@')[1] || '';
-
-    if (allowedDomain && domain.toLowerCase() !== allowedDomain.toLowerCase()) {
-      return done(null, false, { message: 'Unauthorized domain' });
-    }
-
-    // Find or create a user mapping for googleId
-    const [user] = await User.findOrCreate({
-      where: { googleId: profile.id },
-      defaults: { email, role: 'Faculty' }
-    });
-
-    return done(null, user);
-  } catch (err) {
-    return done(err);
-  }
-}));
+const User = require('../models/User'); // Importing your User model
 
 passport.serializeUser((user, done) => {
-  done(null, user.id);
+    done(null, user.id); // Save user ID to session
 });
 
 passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findByPk(id);
-    done(null, user);
-  } catch (err) {
-    done(err);
-  }
+    try {
+        const user = await User.findByPk(id); // Find user by ID
+        done(null, user);
+    } catch (err) {
+        done(err, null);
+    }
 });
+
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    passReqToCallback: true
+},
+async (req, accessToken, refreshToken, profile, done) => {
+    try {
+        // Check if user already exists
+        const existingUser = await User.findOne({ where: { googleId: profile.id } });
+
+        if (existingUser) {
+            return done(null, existingUser);
+        }
+
+        // If new user, create them in the database
+        const newUser = await User.create({
+            googleId: profile.id,
+            email: profile.emails[0].value,
+            role: 'Faculty' // Default role as per your User.js model
+        });
+
+        return done(null, newUser);
+    } catch (err) {
+        console.error('Google Auth Error:', err);
+        return done(err, null);
+    }
+}));
 
 module.exports = passport;
