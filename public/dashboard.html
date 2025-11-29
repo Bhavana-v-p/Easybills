@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EasyBills Dashboard</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f6fa;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar h2 {
+      font-size: 1.6rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .menu-item {
+      padding: 0.9rem 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 0.7rem;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-size: 1rem;
+    }
+    .menu-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    .menu-item.active {
+      background: rgba(255, 255, 255, 0.3);
+      font-weight: 600;
+    }
+
+    /* Topbar */
+    .main {
+      flex: 1;
+      padding: 1.5rem 2rem;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .topbar h1 {
+      font-size: 1.8rem;
+      color: #333;
+      font-weight: 700;
+    }
+
+    .logout-btn {
+      padding: 0.6rem 1rem;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 0.75rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .logout-btn:hover {
+      background: #5568d3;
+    }
+
+    /* Cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .card {
+      background: white;
+      padding: 1.4rem;
+      border-radius: 1rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+
+    .card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    /* Table */
+    .table-container {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      padding: 0.9rem;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    th {
+      background: #f0f1f5;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .status {
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .pending { background: #fff3cd; color: #d39e00; }
+    .approved { background: #d4edda; color: #155724; }
+    .rejected { background: #f8d7da; color: #721c24; }
+
+    @media(max-width: 768px) {
+      .sidebar { display: none; }
+      body { flex-direction: column; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>EasyBills</h2>
+
+    <div class="menu-item active">Dashboard</div>
+    <div class="menu-item">My Claims</div>
+    <div class="menu-item">Upload Bill</div>
+    <div class="menu-item">Profile</div>
+    <div class="menu-item">Settings</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <h1>Dashboard Overview</h1>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Cards -->
+    <div class="cards">
+      <div class="card">
+        <h3>Total Claims</h3>
+        <div class="value">18</div>
+      </div>
+      <div class="card">
+        <h3>Approved</h3>
+        <div class="value">12</div>
+      </div>
+      <div class="card">
+        <h3>Pending</h3>
+        <div class="value">4</div>
+      </div>
+      <div class="card">
+        <h3>Rejected</h3>
+        <div class="value">2</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <h2 style="font-size:1.3rem; color:#333; margin-bottom:1rem;">Recent Claims</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Bill ID</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>#B1023</td>
+            <td>2025-01-20</td>
+            <td>₹1,200</td>
+            <td><span class="status approved">Approved</span></td>
+          </tr>
+
+          <tr>
+            <td>#B1024</td>
+            <td>2025-01-22</td>
+            <td>₹850</td>
+            <td><span class="status pending">Pending</span></td>
+          </tr>
+
+          <tr>
+            <td>#B1025</td>
+            <td>2025-01-25</td>
+            <td>₹2,000</td>
+            <td><span class="status rejected">Rejected</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    function logout() {
+      window.location.href = "landing.html";
+    }
+  </script>
+
+</body>
+</html>

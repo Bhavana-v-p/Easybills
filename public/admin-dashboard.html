@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EasyBills — Admin Dashboard</title>
+
+  <!-- Fonts & Chart.js -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+  <style>
+    :root{
+      --bg: #FFF9EE;
+      --card: #FFF;
+      --accent: #FFF5CC;
+      --muted: #6b6f7a;
+      --primary: #2A2A2A;
+      --accent-strong: #FFD54A;
+      --accent-dark: #E6B800;
+      --success: #20bf6b;
+      --danger: #eb3b5a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Poppins",sans-serif;
+      background:linear-gradient(180deg,#FFF9EE,#F6F2E8);
+      color:var(--primary);
+    }
+    .wrap{max-width:1200px;margin:22px auto;padding:18px}
+    header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:18px
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{width:52px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.06)}
+    .profile img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+
+    .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+    .card{
+      flex:1;min-width:150px;
+      background:var(--card);
+      padding:18px;
+      border-radius:12px;
+      box-shadow:0 12px 30px rgba(20,40,80,0.06)
+    }
+    .card h3{margin:0;font-size:14px;color:var(--muted)}
+    .card p{margin-top:8px;font-size:22px;font-weight:800}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
+
+    .panel{
+      background:var(--card);
+      padding:14px;
+      border-radius:12px;
+      box-shadow:0 12px 30px rgba(20,40,80,0.04)
+    }
+
+    .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+    .filters input,.filters select{
+      padding:8px;border-radius:8px;border:1px solid #ddd
+    }
+    .btn{
+      padding:8px 12px;
+      border-radius:8px;
+      border:none;
+      cursor:pointer;
+      font-weight:700
+    }
+    .apply{background:var(--accent-dark);color:#fff}
+    .clear{background:#ddd}
+
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th{background:#fff;font-weight:700;border-bottom:2px solid #eee;padding:10px}
+    td{padding:10px;border-bottom:1px solid #f1f1f1;font-size:14px}
+
+    .status-badge{
+      padding:6px 10px;
+      font-size:12px;
+      border-radius:999px;
+      font-weight:700;
+      color:#fff;
+    }
+    .s-sub{background:#7a8aa6}
+    .s-ver{background:#4b7bec}
+    .s-app{background:#6c5ce7}
+    .s-paid{background:#20bf6b}
+    .s-rej{background:#eb3b5a}
+
+    .actions button{padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .edit{background:#eaf0ff;color:#16337a}
+    .download{background:#eee}
+
+    .side{
+      background:var(--card);
+      padding:14px;
+      border-radius:12px;
+      box-shadow:0 12px 30px rgba(20,40,80,0.04)
+    }
+    .chart-wrap{height:220px;margin-bottom:12px}
+
+    .modal-back{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.5);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      z-index:100
+    }
+    .modal{
+      background:#fff;
+      padding:18px;
+      border-radius:12px;
+      width:400px;
+      max-width:95%;
+      box-shadow:0 20px 40px rgba(0,0,0,0.2);
+    }
+    .modal textarea,.modal input,.modal select{
+      width:100%;
+      padding:8px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      margin-top:6px
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <img src="easybills-logo.jpg">
+      <div>
+        <h1 style="margin:0">EasyBills — Admin Dashboard</h1>
+        <div style="font-size:13px;color:#666">Verify • Approve • Process Payments</div>
+      </div>
+    </div>
+
+    <div class="profile" id="profileBox"></div>
+  </header>
+
+  <!-- STATISTICS -->
+  <div class="stats">
+    <div class="card"><h3>Total Submitted</h3><p id="statSubmitted">—</p></div>
+    <div class="card"><h3>Verified</h3><p id="statVerified">—</p></div>
+    <div class="card"><h3>Approved</h3><p id="statApproved">—</p></div>
+    <div class="card"><h3>Paid</h3><p id="statPaid">—</p></div>
+    <div class="card"><h3>Rejected</h3><p id="statRejected">—</p></div>
+    <div class="card"><h3>Total Amount (₹)</h3><p id="statTotalAmount">—</p></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEFT PANEL -->
+    <div class="panel">
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700;font-size:15px">All Bills</div>
+        <button class="btn" onclick="exportCSV()" style="background:#fff;border:1px solid #ddd">
+          Export CSV
+        </button>
+      </div>
+
+      <div class="filters">
+        <input type="date" id="filterFrom">
+        <input type="date" id="filterTo">
+        <select id="filterCategory">
+          <option value="">All categories</option>
+          <option value="travel">Travel</option>
+          <option value="stationery">Stationery</option>
+          <option value="registration">Registration Fees</option>
+          <option value="accommodation">Accommodation</option>
+          <option value="others">Others</option>
+        </select>
+        <select id="filterStatus">
+          <option value="">All status</option>
+          <option value="submitted">Submitted</option>
+          <option value="verified">Verified</option>
+          <option value="approved">Approved</option>
+          <option value="paid">Paid</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="Search email or filename">
+        <button class="btn apply" id="applyFilters">Apply</button>
+        <button class="btn clear" id="clearFilters">Clear</button>
+      </div>
+
+      <div style="max-height:520px;overflow-y:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="billsBody">
+            <tr><td colspan="6" style="padding:40px;text-align:center;color:#777">Loading bills…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="side">
+      <h3 style="margin:0 0 12px">Analytics</h3>
+      <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalBack" class="modal-back">
+  <div class="modal">
+    <h3>Bill Details</h3>
+    <div id="modalContent"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:8px">
+      <button class="btn clear" id="modalCancel">Cancel</button>
+      <button class="btn apply" id="modalSave">Save Changes</button>
+    </div>
+  </div>
+</div>
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script>
+/* ------------------------- ADMIN EMAILS ------------------------- */
+const adminEmails = ["hridya.susil@gmail.com"];  // your admin login
+
+/* ------------------------- FIREBASE CONFIG ----------------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBiRn-E8ya4TAntTo2m7vrRyiYxSGZWdU0",
+  authDomain: "easybills-18d70.firebaseapp.com",
+  projectId: "easybills-18d70",
+  storageBucket: "easybills-18d70.appspot.com",
+  messagingSenderId: "53260545148",
+  appId: "1:53260545148:web:38bfe6a2a62b2fcb04adf9"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ------------------------- GLOBAL DOM REFS ------------------------- */
+const billsBody = document.getElementById("billsBody");
+
+const statSubmitted = document.getElementById("statSubmitted");
+const statVerified = document.getElementById("statVerified");
+const statApproved = document.getElementById("statApproved");
+const statPaid = document.getElementById("statPaid");
+const statRejected = document.getElementById("statRejected");
+const statTotalAmount = document.getElementById("statTotalAmount");
+
+const filterFrom = document.getElementById("filterFrom");
+const filterTo = document.getElementById("filterTo");
+const filterCategory = document.getElementById("filterCategory");
+const filterStatus = document.getElementById("filterStatus");
+const filterSearch = document.getElementById("filterSearch");
+const applyFilters = document.getElementById("applyFilters");
+const clearFilters = document.getElementById("clearFilters");
+
+const modalBack = document.getElementById("modalBack");
+const modalContent = document.getElementById("modalContent");
+const modalSave = document.getElementById("modalSave");
+const modalCancel = document.getElementById("modalCancel");
+
+const profileBox = document.getElementById("profileBox");
+
+let allBills = [];
+let currentUser = null;
+let barChart, pieChart;
+
+
+/* ------------------------- HELPER FUNCTIONS ------------------------- */
+function fmt(ts) {
+  if (!ts) return "—";
+  if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleDateString();
+  return new Date(ts).toLocaleDateString();
+}
+function money(n) {
+  return "₹ " + Number(n || 0).toLocaleString();
+}
+
+
+/* ------------------------- AUTH CHECK ------------------------- */
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  currentUser = user;
+  const email = user.email.toLowerCase();
+
+  // show admin profile
+  profileBox.innerHTML = `
+    <div style="text-align:right">
+      <div style="font-weight:700">${user.displayName || user.email}</div>
+      <div style="color:#777;font-size:13px">${user.email}</div>
+    </div>
+    <img src="${user.photoURL || "https://via.placeholder.com/44"}">
+  `;
+
+  if (!adminEmails.includes(email)) {
+    alert("Access denied — admin only");
+    window.location.href = "track-status.html";
+    return;
+  }
+
+  await loadAllBills();
+  setupCharts();
+});
+
+
+/* ------------------------- LOAD ALL BILLS ------------------------- */
+async function loadAllBills() {
+  billsBody.innerHTML = `
+    <tr><td colspan="6" style="text-align:center;padding:40px">Loading…</td></tr>
+  `;
+
+  const snap = await db.collection("bills").orderBy("createdAt", "desc").get();
+  allBills = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  renderStats();
+  renderTable(allBills);
+  updateCharts(allBills);
+}
+
+
+/* ------------------------- RENDER STAT CARDS ------------------------- */
+function renderStats() {
+  const statusCount = { submitted: 0, verified: 0, approved: 0, paid: 0, rejected: 0 };
+  let totalAmount = 0;
+
+  allBills.forEach(b => {
+    const s = b.status ||
+      (b.paidAt ? "paid" : b.approvedAt ? "approved" : b.verifiedAt ? "verified" : "submitted");
+
+    statusCount[s]++;
+    totalAmount += Number(b.amount || 0);
+  });
+
+  statSubmitted.textContent = allBills.length;
+  statVerified.textContent = statusCount.verified;
+  statApproved.textContent = statusCount.approved;
+  statPaid.textContent = statusCount.paid;
+  statRejected.textContent = statusCount.rejected;
+  statTotalAmount.textContent = money(totalAmount);
+}
+
+
+/* ------------------------- RENDER TABLE ------------------------- */
+function renderTable(list) {
+  if (!list.length) {
+    billsBody.innerHTML = `
+      <tr><td colspan="6" style="text-align:center;padding:40px;color:#777">
+        No bills found.
+      </td></tr>`;
+    return;
+  }
+
+  billsBody.innerHTML = "";
+
+  list.forEach(b => {
+    const status = b.status ||
+      (b.paidAt ? "paid" : b.approvedAt ? "approved" : b.verifiedAt ? "verified" : "submitted");
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <div style="font-weight:700">${b.userEmail || "—"}</div>
+        <div style="color:#777;font-size:12px">${b.filename || ""}</div>
+      </td>
+      <td>${b.category || "—"}</td>
+      <td>${money(b.amount)}</td>
+      <td>${fmt(b.expenseDate || b.createdAt)}</td>
+      <td>
+        <span class="status-badge ${
+          status === "verified" ? "s-ver" :
+          status === "approved" ? "s-app" :
+          status === "paid" ? "s-paid" :
+          status === "rejected" ? "s-rej" : "s-sub"
+        }">${status.toUpperCase()}</span>
+      </td>
+      <td>
+        <button class="edit" onclick="openModal('${b.id}')">View/Edit</button>
+        <a href="${b.fileURL || "#"}" download>
+          <button class="download">Download</button>
+        </a>
+      </td>
+    `;
+    billsBody.appendChild(tr);
+  });
+}
+
+
+/* ------------------------- FILTERS ------------------------- */
+applyFilters.onclick = () => {
+  const from = filterFrom.value ? new Date(filterFrom.value) : null;
+  const to = filterTo.value ? new Date(filterTo.value) : null;
+  const cat = filterCategory.value;
+  const st = filterStatus.value;
+  const q = filterSearch.value.toLowerCase().trim();
+
+  const filtered = allBills.filter(b => {
+    let d = b.expenseDate || b.createdAt;
+    if (d?.seconds) d = new Date(d.seconds * 1000);
+    else d = new Date(d);
+
+    if (from && d < from) return false;
+
+    if (to) {
+      const end = new Date(to);
+      end.setHours(23, 59, 59);
+      if (d > end) return false;
+    }
+
+    if (cat && b.category !== cat) return false;
+
+    const status = b.status ||
+      (b.paidAt ? "paid" : b.approvedAt ? "approved" : b.verifiedAt ? "verified" : "submitted");
+
+    if (st && status !== st) return false;
+
+    if (q) {
+      const searchStr = ${b.userEmail} ${b.filename} ${b.category}.toLowerCase();
+      if (!searchStr.includes(q)) return false;
+    }
+
+    return true;
+  });
+
+  renderTable(filtered);
+  updateCharts(filtered);
+};
+
+clearFilters.onclick = () => {
+  filterFrom.value = "";
+  filterTo.value = "";
+  filterCategory.value = "";
+  filterStatus.value = "";
+  filterSearch.value = "";
+
+  renderTable(allBills);
+  updateCharts(allBills);
+};
+
+
+/* ------------------------- MODAL OPEN ------------------------- */
+function openModal(id) {
+  const bill = allBills.find(x => x.id === id);
+  if (!bill) return alert("Bill not found");
+
+  modalContent.innerHTML = `
+    <label>Status</label>
+    <select id="m_status">
+      <option value="submitted">Submitted</option>
+      <option value="verified">Verified</option>
+      <option value="approved">Approved</option>
+      <option value="paid">Paid</option>
+      <option value="rejected">Rejected</option>
+    </select>
+
+    <label>Remarks</label>
+    <textarea id="m_remarks">${bill.remarks || ""}</textarea>
+
+    <label>Verified Date</label>
+    <input type="date" id="m_verified">
+
+    <label>Approved Date</label>
+    <input type="date" id="m_approved">
+
+    <label>Paid Date</label>
+    <input type="date" id="m_paid">
+  `;
+
+  // assign values
+  document.getElementById("m_status").value =
+    bill.status ||
+    (bill.paidAt ? "paid" : bill.approvedAt ? "approved" : bill.verifiedAt ? "verified" : "submitted");
+
+  document.getElementById("m_verified").value =
+    bill.verifiedAt ? new Date(bill.verifiedAt.seconds * 1000).toISOString().slice(0, 10) : "";
+
+  document.getElementById("m_approved").value =
+    bill.approvedAt ? new Date(bill.approvedAt.seconds * 1000).toISOString().slice(0, 10) : "";
+
+  document.getElementById("m_paid").value =
+    bill.paidAt ? new Date(bill.paidAt.seconds * 1000).toISOString().slice(0, 10) : "";
+
+  modalBack.style.display = "flex";
+
+  modalSave.onclick = async () => {
+    const updates = {};
+    updates.status = document.getElementById("m_status").value;
+    updates.remarks = document.getElementById("m_remarks").value.trim();
+
+    const v = document.getElementById("m_verified").value;
+    const a = document.getElementById("m_approved").value;
+    const p = document.getElementById("m_paid").value;
+
+    if (v) updates.verifiedAt = new Date(v);
+    if (a) updates.approvedAt = new Date(a);
+    if (p) updates.paidAt = new Date(p);
+
+    await db.collection("bills").doc(bill.id).update(updates);
+    alert("Saved successfully");
+
+    modalBack.style.display = "none";
+
+    await loadAllBills(); // refresh data
+  };
+}
+
+modalCancel.onclick = () => modalBack.style.display = "none";
+modalBack.onclick = e => { if (e.target === modalBack) modalBack.style.display = "none"; };
+
+
+/* ------------------------- CHARTS ------------------------- */
+function setupCharts() {
+  barChart = new Chart(document.getElementById("barChart").getContext("2d"), {
+    type: "bar",
+    data: { labels: [], datasets: [{ data: [], backgroundColor: "#FFD54A" }] },
+    options: { plugins: { legend: { display: false } } }
+  });
+
+  pieChart = new Chart(document.getElementById("pieChart").getContext("2d"), {
+    type: "pie",
+    data: { labels: [], datasets: [{ data: [], backgroundColor: ["#FFD54A","#FFB74D","#FF8A65","#81C784","#64B5F6"] }] }
+  });
+
+  updateCharts(allBills);
+}
+
+function updateCharts(list) {
+  const monthMap = {};
+  const catMap = {};
+
+  list.forEach(b => {
+    let dt = b.createdAt?.seconds
+      ? new Date(b.createdAt.seconds * 1000)
+      : new Date();
+
+    const key = dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2);
+    monthMap[key] = (monthMap[key] || 0) + Number(b.amount || 0);
+
+    const cat = b.category || "others";
+    catMap[cat] = (catMap[cat] || 0) + Number(b.amount || 0);
+  });
+
+  barChart.data.labels = Object.keys(monthMap);
+  barChart.data.datasets[0].data = Object.values(monthMap);
+  barChart.update();
+
+  pieChart.data.labels = Object.keys(catMap);
+  pieChart.data.datasets[0].data = Object.values(catMap);
+  pieChart.update();
+}
+
+
+/* ------------------------- EXPORT CSV ------------------------- */
+function exportCSV() {
+  let csv = "User,Category,Amount,Date,Status,File URL\n";
+
+  allBills.forEach(b => {
+    csv += [
+      b.userEmail,
+      b.category,
+      b.amount,
+      fmt(b.expenseDate || b.createdAt),
+      b.status,
+      b.fileURL
+    ].join(",") + "\n";
+  });
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "easybills-admin-export.csv";
+  a.click();
+}
+</script>
+
+</body>
+</html>

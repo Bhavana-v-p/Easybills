@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EasyBills — My Claims</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    body {
+        margin: 0;
+        font-family: "Poppins", sans-serif;
+        background: #E3F0FF;
+        padding: 20px;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        padding: 15px 25px;
+        border-radius: 14px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+        margin-bottom: 20px;
+    }
+
+    .logo-area {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .logo-area img {
+        width: 38px;
+        animation: floatCoin 3s infinite ease-in-out;
+    }
+    @keyframes floatCoin {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+        100% { transform: translateY(0); }
+    }
+
+    .title {
+        font-size: 26px;
+        font-weight: 700;
+    }
+
+    .profile-img {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 2px solid #ddd;
+        object-fit: cover;
+    }
+
+    .table-box {
+        background: #fff;
+        padding: 20px;
+        border-radius: 14px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+    }
+
+    th, td {
+        padding: 14px;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    th {
+        background: #F5F7FF;
+        font-weight: 600;
+    }
+
+    tr {
+        border-bottom: 1px solid #eee;
+    }
+
+    .status {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .pending { background: #f7b731; }
+    .approved { background: #20bf6b; }
+    .rejected { background: #eb3b5a; }
+
+    .btn-view, .btn-download {
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: none;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .btn-view {
+        background: #4b7bec;
+        color: white;
+    }
+    .btn-download {
+        background: #cdcdcd;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 40px;
+        font-size: 16px;
+        font-weight: 500;
+        color: #666;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <div class="logo-area">
+        <img src="easybills-logo.jpg">
+        <div class="title">My Claims</div>
+    </div>
+
+    <img id="userPhoto" class="profile-img">
+</div>
+
+<div class="table-box">
+    <h3>Your Submitted Bills</h3>
+    <div id="tableContainer">Loading…</div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script>
+    // Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyBiRn-E8ya4TAntTo2m7vrRyiYxSGZWdU0",
+        authDomain: "easybills-18d70.firebaseapp.com",
+        projectId: "easybills-18d70",
+        storageBucket: "easybills-18d70.appspot.com",
+        messagingSenderId: "53260545148",
+        appId: "1:53260545148:web:38bfe6a2a62b2fcb04adf9"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const tableContainer = document.getElementById("tableContainer");
+    const userPhoto = document.getElementById("userPhoto");
+
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            window.location.href = "login.html";
+            return;
+        }
+
+        userPhoto.src = user.photoURL;
+
+        // Load Bills
+        const snapshot = await db.collection("bills")
+            .where("userId", "==", user.uid)
+            .orderBy("createdAt", "desc")
+            .get();
+
+        if (snapshot.empty) {
+            tableContainer.innerHTML = <div class="empty">No claims submitted yet.</div>;
+            return;
+        }
+
+        let html = `
+            <table>
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Bill</th>
+                    <th>Download</th>
+                </tr>
+        `;
+
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const statusClass = d.status || "pending";
+
+            html += `
+                <tr>
+                    <td>${d.category}</td>
+                    <td>₹ ${d.amount}</td>
+                    <td>${d.expenseDate}</td>
+                    <td><span class="status ${statusClass}">${statusClass.toUpperCase()}</span></td>
+                    <td><button class="btn-view" onclick="window.open('${d.fileURL}', '_blank')">View</button></td>
+                    <td><a href="${d.fileURL}" download><button class="btn-download">Download</button></a></td>
+                </tr>
+            `;
+        });
+
+        html += "</table>";
+        tableContainer.innerHTML = html;
+    });
+</script>
+
+</body>
+</html>
