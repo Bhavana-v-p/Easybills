@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EasyBills — Upload Bill</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ---------- YOUR STYLES — UNCHANGED ---------- */
+:root{
+  --bg:#DDEBFF;--card:#FFF;--accent:#FFF5CC;--primary:#2A2A2A;--muted:#6b6f7a;--success:#28a745;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:"Poppins",sans-serif;
+  background:linear-gradient(135deg,#AEC9FF,#CDE7FF);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.container{
+  width:100%;max-width:920px;background:rgba(255,255,255,0.95);
+  border-radius:16px;padding:20px;box-shadow:0 18px 40px rgba(20,40,80,0.08)
+}
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px 20px;border-bottom:1px solid rgba(0,0,0,0.05)
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{width:36px;animation:floatCoin 3s infinite ease-in-out}
+@keyframes floatCoin{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+.brand-text{font-weight:700;font-size:20px;color:var(--primary)}
+
+.profile-small{
+  width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #fff;
+  box-shadow:0 6px 18px rgba(0,0,0,0.12)
+}
+
+.panel{display:grid;grid-template-columns:1fr 420px;gap:20px;padding:20px}
+@media (max-width:900px){.panel{grid-template-columns:1fr;}}
+
+.upload-card{
+  background:var(--card);padding:22px;border-radius:12px;
+  box-shadow:0 10px 30px rgba(30,60,100,0.06)
+}
+.upload-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.upload-sub{color:var(--muted);margin-bottom:16px}
+
+.dropzone{
+  border:2px dashed rgba(60,90,140,0.14);
+  background:linear-gradient(180deg,rgba(245,246,252,0.6),rgba(255,255,255,0.35));
+  border-radius:10px;padding:28px;text-align:center;cursor:pointer;
+  transition:0.18s;display:flex;flex-direction:column;
+  gap:10px;align-items:center;justify-content:center;
+}
+.dropzone.dragover{border-color:#7f91b7;transform:translateY(-4px)}
+.dropzone img{width:86px;opacity:0.95}
+.file-info{margin-top:10px;color:var(--muted)}
+
+.meta-card{
+  background:#fff;padding:18px;border-radius:12px;
+  box-shadow:0 8px 24px rgba(20,40,80,0.05)
+}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+input,select,textarea{
+  width:100%;padding:10px;border-radius:10px;border:1px solid #e6e9f2;font-size:14px;
+}
+textarea{min-height:120px}
+
+.actions{display:flex;gap:12px;margin-top:16px}
+.primary{
+  background:#2A6BE0;color:#fff;padding:12px 16px;
+  border-radius:10px;border:none;font-weight:700;cursor:pointer;
+}
+.muted{
+  background:#f1f5fb;padding:10px;border-radius:10px;
+  border:1px solid #eef2ff;cursor:pointer;
+}
+
+.progress-wrap{margin-top:14px}
+.progress{
+  height:12px;background:#eef3ff;border-radius:999px;overflow:hidden;
+}
+.progress>i{
+  display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,#66b3ff,#ffd95a)
+}
+.status{font-size:13px;color:var(--muted)}
+.success{color:var(--success);font-weight:700;margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="container">
+<header>
+  <div class="brand">
+    <img src="easybills-logo.jpg"><div class="brand-text">EasyBills</div>
+  </div>
+  <img id="smallPhoto" class="profile-small">
+</header>
+
+<div class="panel">
+
+  <!-- LEFT -->
+  <div class="upload-card">
+    <div class="upload-title">Upload a bill</div>
+    <div class="upload-sub">Drag & drop your bill or click to choose (PDF / JPG / PNG)</div>
+
+    <div id="dropzone" class="dropzone">
+      <img src="https://cdn-icons-png.flaticon.com/512/263/263142.png">
+      <div id="dzText">Drop files here or click to browse</div>
+      <div id="selectedFileInfo" class="file-info"></div>
+      <input id="fileInput" type="file" accept=".pdf,image/*" style="display:none">
+    </div>
+
+    <div id="progressWrap" style="display:none">
+      <div class="progress"><i id="progressBar"></i></div>
+      <div id="progressText" class="status">Uploading 0%</div>
+    </div>
+
+    <div id="resultMessage"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="meta-card">
+    <label>Category</label>
+    <select id="category">
+      <option value="travel">Travel</option>
+      <option value="stationery">Stationery</option>
+      <option value="registration">Registration fees</option>
+      <option value="accommodation">Accommodation</option>
+      <option value="others">Others</option>
+    </select>
+
+    <label>Amount (₹)</label>
+    <input id="amount" type="number">
+
+    <label>Expense Date</label>
+    <input id="date" type="date">
+
+    <label>Notes (optional)</label>
+    <textarea id="notes"></textarea>
+
+    <div class="actions">
+      <button id="uploadBtn" class="primary">Upload & Save</button>
+      <button id="clearBtn" class="muted">Clear</button>
+    </div>
+
+    <div id="metaStatus" class="status"></div>
+  </div>
+
+</div></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<script>
+// ---------------- FIREBASE CONFIG ----------------
+firebase.initializeApp({
+  apiKey:"AIzaSyBiRn-E8ya4TAntTo2m7vrRyiYxSGZWdU0",
+  authDomain:"easybills-18d70.firebaseapp.com",
+  projectId:"easybills-18d70",
+  storageBucket:"easybills-18d70.appspot.com",
+  messagingSenderId:"53260545148",
+  appId:"1:53260545148:web:38bfe6a2a62b2fcb04adf9"
+});
+
+const auth = firebase.auth();
+const storage = firebase.storage();
+const db = firebase.firestore();
+
+// UI refs
+const dropzone=document.getElementById("dropzone");
+const fileInput=document.getElementById("fileInput");
+const dzText=document.getElementById("dzText");
+const selectedFileInfo=document.getElementById("selectedFileInfo");
+const progressWrap=document.getElementById("progressWrap");
+const progressBar=document.getElementById("progressBar");
+const progressText=document.getElementById("progressText");
+const uploadBtn=document.getElementById("uploadBtn");
+const clearBtn=document.getElementById("clearBtn");
+const category=document.getElementById("category");
+const amount=document.getElementById("amount");
+const dateInput=document.getElementById("date");
+const notes=document.getElementById("notes");
+const smallPhoto=document.getElementById("smallPhoto");
+const metaStatus=document.getElementById("metaStatus");
+const resultMessage=document.getElementById("resultMessage");
+
+let selectedFile=null;
+
+// ---------------- AUTH CHECK ----------------
+auth.onAuthStateChanged(u=>{
+  if(!u){window.location.href="login.html";}
+  else{smallPhoto.src=u.photoURL;}
+});
+
+// ---------------- DROPZONE ----------------
+dropzone.onclick=()=>fileInput.click();
+fileInput.onchange=e=>handleFiles(e.target.files);
+
+dropzone.ondragover=e=>{
+  e.preventDefault();
+  dropzone.classList.add("dragover");
+};
+dropzone.ondragleave=()=>dropzone.classList.remove("dragover");
+
+dropzone.ondrop=e=>{
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+  handleFiles(e.dataTransfer.files);
+};
+
+// ---------------- FILE HANDLER ----------------
+function handleFiles(files){
+  const f = files[0];
+  if(!f) return;
+
+  if(f.size > 10*1024*1024){
+    selectedFileInfo.textContent = "File too large (max 10MB)";
+    selectedFile=null;
+    return;
+  }
+
+  const allowed=["application/pdf","image/png","image/jpeg"];
+  if(!allowed.includes(f.type)){
+    selectedFileInfo.textContent="Only PDF, PNG, JPG allowed";
+    selectedFile=null;
+    return;
+  }
+
+  selectedFile=f;
+  selectedFileInfo.textContent = ${f.name} • ${(f.size/1024/1024).toFixed(2)} MB;
+  dzText.textContent="File selected — ready to upload";
+}
+
+// ---------------- CLEAR ----------------
+clearBtn.onclick=()=>{
+  selectedFile=null;
+  fileInput.value="";
+  dzText.textContent="Drop files here or click to browse";
+  selectedFileInfo.textContent="";
+  progressWrap.style.display="none";
+  metaStatus.textContent="";
+  resultMessage.innerHTML="";
+};
+
+// ---------------- UPLOAD & SAVE ----------------
+uploadBtn.onclick=async()=>{
+  metaStatus.textContent="";
+  resultMessage.innerHTML="";
+
+  if(!selectedFile){metaStatus.textContent="Select a file first";return;}
+  if(!amount.value || Number(amount.value)<=0){metaStatus.textContent="Enter valid amount";return;}
+  if(!dateInput.value){metaStatus.textContent="Select a date";return;}
+
+  const user=auth.currentUser;
+  if(!user){metaStatus.textContent="Not logged in";return;}
+
+  const ext=selectedFile.name.split(".").pop();
+  const filename=${user.uid}_${Date.now()}.${ext};
+  const ref=storage.ref(bills/${user.uid}/${filename});
+
+  progressWrap.style.display="block";
+
+  const task = ref.put(selectedFile);
+
+  task.on("state_changed",snap=>{
+    const pct=Math.round(snap.bytesTransferred/snap.totalBytes*100);
+    progressBar.style.width=pct+"%";
+    progressText.textContent=Uploading ${pct}%;
+  },err=>{
+    resultMessage.innerHTML=<span style="color:red">${err.message}</span>;
+  },async()=>{
+    const url=await task.snapshot.ref.getDownloadURL();
+
+    await db.collection("bills").add({
+      userId:user.uid,
+      fileURL:url,
+      filename:selectedFile.name,
+      category:category.value,
+      amount:Number(amount.value),
+      expenseDate:dateInput.value,
+      notes:notes.value,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    resultMessage.innerHTML=<div class="success">Uploaded & saved!</div>;
+    setTimeout(()=>window.location.href="dashboard.html",1200);
+  });
+};
+</script>
+
+</body>
+</html>

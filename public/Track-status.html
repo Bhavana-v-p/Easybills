@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EasyBills — Track Status</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #E9F0FF;
+      --card: #FFFFFF;
+      --muted: #6b6f7a;
+      --primary: #2A2A2A;
+      --accent: #FFF5CC;
+      --done: #34C759;
+      --active: #6C5CE7;
+      --pending: #dfe8ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(180deg, #EAF3FF, #F8FAFF);
+      padding: 18px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand img {
+      width: 44px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-6px)
+      }
+
+      100% {
+        transform: translateY(0)
+      }
+    }
+
+    /* Bill Card */
+    .bill-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 14px 30px rgba(20, 40, 80, 0.06);
+      display: flex;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .meta {
+      width: 260px;
+    }
+
+    .meta h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .meta p {
+      margin: 5px 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .pill {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 999px;
+      display: inline-block;
+      margin-top: 6px;
+    }
+
+    .submitted {
+      background: #eef2ff;
+      color: #41528c;
+    }
+
+    .verified {
+      background: #dfeaff;
+      color: #2b55d8;
+    }
+
+    .approved {
+      background: #c0b3ff;
+      color: #4524e2;
+    }
+
+    .paid {
+      background: #92f6ac;
+      color: #026c1a;
+    }
+
+    /* Timeline */
+    .timeline {
+      flex: 1;
+    }
+
+    .steps {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .step {
+      text-align: center;
+      width: 120px;
+    }
+
+    .circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      margin: 0 auto 6px;
+    }
+
+    .circle.done {
+      background: var(--done);
+      color: white;
+    }
+
+    .circle.pending {
+      background: var(--pending);
+      color: #56627a;
+    }
+
+    /* Admin Area */
+    .admin-area {
+      margin-top: 10px;
+      border-top: 1px dashed #ccc;
+      padding-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .admin-area input,
+    .admin-area select {
+      padding: 8px;
+      border: 1px solid #e6e9f2;
+      border-radius: 8px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .save {
+      background: var(--active);
+      color: white;
+      border: none;
+    }
+
+    .clear {
+      background: #f1f3f7;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <header>
+      <div class="brand">
+        <img src="easybills-logo.jpg" />
+        <h2>EasyBills — Track Status</h2>
+      </div>
+
+      <div id="userBox"></div>
+    </header>
+
+    <main id="list">
+      <div id="loading">Loading your bills…</div>
+    </main>
+
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+    /* FIREBASE CONFIG */
+    const firebaseConfig = {
+      apiKey: "AIzaSyBiRn-E8ya4TAntTo2m7vrRyiYxSGZWdU0",
+      authDomain: "easybills-18d70.firebaseapp.com",
+      projectId: "easybills-18d70",
+      storageBucket: "easybills-18d70.appspot.com",
+      messagingSenderId: "53260545148",
+      appId: "1:53260545148:web:38bfe6a2a62b2fcb04adf9"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const adminEmails = ["youradmin@bits.com"];
+
+    const listEl = document.getElementById("list");
+    const loadingEl = document.getElementById("loading");
+    const userBox = document.getElementById("userBox");
+
+    function fmt(ts) {
+      if (!ts) return "—";
+      if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleString();
+      return new Date(ts).toLocaleString();
+    }
+
+    /* RENDER BILL CARD */
+    function renderBillCard(doc, isAdmin) {
+      const data = doc.data();
+      const card = document.createElement("div");
+      card.className = "bill-card";
+
+      let status = data.status || "submitted";
+
+      const meta = `
+        <div class="meta">
+          <h3>${data.filename}</h3>
+          <p>Category: ${data.category} • ₹${data.amount}</p>
+          <p>Submitted: ${fmt(data.createdAt)}</p>
+          <a href="${data.fileURL}" target="_blank" style="text-decoration:none;font-size:13px;color:#2746d8">View File</a>
+          <div><span class="pill ${status}">${status.toUpperCase()}</span></div>
+        </div>
+      `;
+
+      const timeline = `
+        <div class="timeline">
+          <div class="steps">
+
+            <div class="step">
+              <div class="circle ${data.createdAt ? 'done' : 'pending'}">1</div>
+              <div>Submitted</div>
+              <small>${fmt(data.createdAt)}</small>
+            </div>
+
+            <div class="step">
+              <div class="circle ${data.verifiedAt ? 'done' : 'pending'}">2</div>
+              <div>Verified</div>
+              <small>${fmt(data.verifiedAt)}</small>
+            </div>
+
+            <div class="step">
+              <div class="circle ${data.approvedAt ? 'done' : 'pending'}">3</div>
+              <div>Approved</div>
+              <small>${fmt(data.approvedAt)}</small>
+            </div>
+
+            <div class="step">
+              <div class="circle ${data.paidAt ? 'done' : 'pending'}">4</div>
+              <div>Paid</div>
+              <small>${fmt(data.paidAt)}</small>
+            </div>
+
+          </div>
+        </div>
+      `;
+
+      card.innerHTML = meta + timeline;
+
+      return card;
+    }
+
+    /* AUTH CHECK + BILL LOADING */
+    auth.onAuthStateChanged(user => {
+
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      /* USER BOX */
+      userBox.innerHTML = `
+        <div style="text-align:right">
+          <div><b>${user.displayName || user.email}</b></div>
+          <small>${user.email}</small>
+        </div>
+        <img src="${user.photoURL}" style="width:44px;height:44px;border-radius:50%">
+      `;
+
+      const isAdmin = adminEmails.includes(user.email.toLowerCase());
+
+      let query = db.collection("bills").orderBy("createdAt", "desc");
+
+      if (!isAdmin) {
+        query = db.collection("bills")
+          .where("userId", "==", user.uid)
+          .orderBy("createdAt", "desc");
+      }
+
+      query.onSnapshot(snap => {
+        listEl.innerHTML = "";
+        if (snap.empty) {
+          listEl.innerHTML = "<p>No bills found.</p>";
+          return;
+        }
+
+        snap.forEach(doc => {
+          listEl.appendChild(renderBillCard(doc, isAdmin));
+        });
+
+      }, err => {
+        listEl.innerHTML = <p style='color:red'>Error loading: ${err.message}</p>;
+      });
+    });
+
+  </script>
+
+</body>
+
+</html>
