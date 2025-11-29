@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router'; 
+ 
+const router = useRouter();
  
 // State variables
 const user = ref<any>(null);
 const loading = ref(true);
  
+const navigate = (path: string) => {
+  router.push(path);
+};
+
 // Fetch user data when component mounts
 onMounted(async () => {
   try {
@@ -38,8 +45,8 @@ const logout = async () => {
 <div class="dashboard-container">
 <div class="sidebar">
 <h2>EasyBills</h2>
-<div class="menu-item active">Dashboard</div>
-<div class="menu-item">My Claims</div>
+<div class="menu-item active" @click="navigate('/dashboard')">Dashboard</div>
+<div class="menu-item" @click="navigate('/my-claims')">My Claims</div>
 <div class="menu-item">Upload Bill</div>
 <div class="menu-item">Profile</div>
 <div class="menu-item">Settings</div>
