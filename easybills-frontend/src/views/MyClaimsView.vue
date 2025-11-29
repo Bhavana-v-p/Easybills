@@ -35,14 +35,14 @@ const formatDate = (dateString: string) => {
 </script>
  
 <template>
-<div class="page-container">
+<div class="dashboard-container">
 <div class="sidebar">
 <h2>EasyBills</h2>
-<div class="menu-item" @click="navigate('/dashboard')">Dashboard</div>
-<div class="menu-item active">My Claims</div>
-<div class="menu-item">Upload Bill</div>
-<div class="menu-item">Profile</div>
-<div class="menu-item">Settings</div>
+<div class="menu-item active" @click="navigate('/dashboard')">Dashboard</div>
+<div class="menu-item" @click="navigate('/my-claims')">My Claims</div> 
+<div class="menu-item" @click="navigate('/upload-bill')">Upload Bill</div>
+<div class="menu-item" @click="navigate('/profile')">Profile</div>
+<div class="menu-item" @click="navigate('/settings')">Settings</div>
 </div>
  
     <div class="main">
