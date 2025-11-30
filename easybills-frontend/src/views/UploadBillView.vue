@@ -232,4 +232,19 @@ input, select, textarea {
 .msg { padding: 10px; border-radius: 6px; margin-bottom: 1rem; text-align: center; }
 .msg.error { background: #fee2e2; color: #dc2626; }
 .msg.success { background: #dcfce7; color: #16a34a; }
+@media (min-width: 1024px) {
+  .claim-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two columns */
+    gap: 2rem;
+  }
+ 
+  /* Make the description and upload box span full width */
+  .form-group:has(textarea), 
+  .upload-group, 
+  .msg, 
+  .submit-btn {
+    grid-column: span 2;
+  }
+}
 </style>
