@@ -1,172 +1,93 @@
 <script setup lang="ts">
-
 import { ref } from 'vue';
-
 import axios from 'axios';
-
 import { useRouter } from 'vue-router';
  
 const router = useRouter();
-
 const loading = ref(false);
-
 const errorMessage = ref('');
-
 const successMessage = ref('');
  
 // Form Data
-
 const form = ref({
-
   category: 'Travel',
-
   amount: '',
-
   description: '',
-
-  dateIncurred: new Date().toISOString().split('T')[0] // Default to today
-
+  dateIncurred: new Date().toISOString().split('T')[0]
 });
  
 // File Handling
-
 const file = ref<File | null>(null);
  
 const handleFileChange = (event: Event) => {
-
   const target = event.target as HTMLInputElement;
-
   if (target.files && target.files[0]) {
-
-    const selectedFile = target.files[0];
- 
-    // 1. Validate Size (10MB Limit)
-
-    if (selectedFile.size > 10 * 1024 * 1024) {
-
-      alert('File size exceeds 10MB limit.');
-
-      target.value = ''; // Reset input
-
-      file.value = null;
-
-      return;
-
-    }
- 
-    // 2. Validate Type
-
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-
-    if (!allowedTypes.includes(selectedFile.type)) {
-
-      alert('Invalid file type. Only PDF, JPG, and PNG are allowed.');
-
-      target.value = '';
-
-      file.value = null;
-
-      return;
-
-    }
- 
-    file.value = selectedFile;
-
+    file.value = target.files[0];
   }
-
 };
  
 const submitClaim = async () => {
-
   loading.value = true;
-
   errorMessage.value = '';
-
   successMessage.value = '';
  
   try {
-
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
  
-    // --- STEP 1: Create the Claim Record ---
-
+    // 1. Create Claim
     const claimResponse = await axios.post(`${apiUrl}/api/faculty/claims`, form.value, {
-
       withCredentials: true
-
     });
  
     if (!claimResponse.data.success) throw new Error('Failed to create claim');
- 
     const newClaimId = claimResponse.data.data.id;
  
-    // --- STEP 2: Upload File (if selected) ---
-
+    // 2. Upload File (if selected)
     if (file.value) {
-
       const formData = new FormData();
-
       formData.append('document', file.value);
  
       await axios.post(`${apiUrl}/api/faculty/claims/${newClaimId}/documents`, formData, {
-
         withCredentials: true,
-
         headers: { 'Content-Type': 'multipart/form-data' }
-
       });
-
     }
  
-    // Success!
-
-    successMessage.value = 'Claim submitted and document uploaded successfully!';
-
-    // Redirect after a short delay
-
+    successMessage.value = 'Claim submitted successfully!';
     setTimeout(() => {
-
       router.push('/my-claims');
-
     }, 1500);
  
   } catch (error: any) {
-
     console.error(error);
-
-    errorMessage.value = error.response?.data?.error || 'Error submitting claim. Please try again.';
-
+    errorMessage.value = error.response?.data?.error || 'Error submitting claim.';
   } finally {
-
     loading.value = false;
-
   }
-
 };
  
-// Navigation
-
 const navigate = (path: string) => router.push(path);
 </script>
  
 <template>
-<div class="dashboard-container">
+<div class="page-container">
 <div class="sidebar">
 <h2>EasyBills</h2>
-<div class="menu-item active" @click="navigate('/dashboard')">Dashboard</div>
-<div class="menu-item" @click="navigate('/my-claims')">My Claims</div> 
-<div class="menu-item" @click="navigate('/upload-bill')">Upload Bill</div>
+<div class="menu-item" @click="navigate('/dashboard')">Dashboard</div>
+<div class="menu-item" @click="navigate('/my-claims')">My Claims</div>
+<div class="menu-item active" @click="navigate('/upload-bill')">Upload Bill</div>
 <div class="menu-item" @click="navigate('/profile')">Profile</div>
 <div class="menu-item" @click="navigate('/settings')">Settings</div>
 </div>
  
-    <div class="main">
+    <div class="main-content">
 <div class="topbar">
 <h1>Submit New Claim</h1>
 </div>
  
-      <div class="form-container">
-<form @submit.prevent="submitClaim">
+      <div class="form-wrapper">
+<form @submit.prevent="submitClaim" class="claim-form">
+<div class="form-row">
 <div class="form-group">
 <label>Expense Category</label>
 <select v-model="form.category" required>
@@ -178,9 +99,10 @@ const navigate = (path: string) => router.push(path);
 </select>
 </div>
  
-          <div class="form-group">
+            <div class="form-group">
 <label>Amount (₹)</label>
-<input type="number" v-model="form.amount" placeholder="e.g. 1200" required min="1" />
+<input type="number" v-model="form.amount" placeholder="e.g. 1200" required />
+</div>
 </div>
  
           <div class="form-group">
@@ -190,21 +112,19 @@ const navigate = (path: string) => router.push(path);
  
           <div class="form-group">
 <label>Description</label>
-<textarea v-model="form.description" rows="3" placeholder="Describe the expense..." required></textarea>
+<textarea v-model="form.description" rows="3" placeholder="Details about the expense..." required></textarea>
 </div>
  
-          <div class="form-group">
-<label>Upload Bill / Receipt</label>
-<p class="hint">Supported: PDF, JPG, PNG (Max 10MB)</p>
-<input type="file" @change="handleFileChange" accept=".pdf,.jpg,.jpeg,.png" required />
+          <div class="form-group upload-group">
+<label>Upload Receipt (Max 10MB)</label>
+<input type="file" @change="handleFileChange" accept=".pdf,.jpg,.png" required />
 </div>
  
-          <div v-if="errorMessage" class="error-msg">{{ errorMessage }}</div>
-<div v-if="successMessage" class="success-msg">{{ successMessage }}</div>
+          <div v-if="errorMessage" class="msg error">{{ errorMessage }}</div>
+<div v-if="successMessage" class="msg success">{{ successMessage }}</div>
  
           <button type="submit" class="submit-btn" :disabled="loading">
-
-            {{ loading ? 'Submitting...' : 'Submit Claim' }}
+            {{ loading ? 'Uploading...' : 'Submit Claim' }}
 </button>
  
         </form>
@@ -214,121 +134,102 @@ const navigate = (path: string) => router.push(path);
 </template>
  
 <style scoped>
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
  
+/* Layout Containers */
 .page-container {
-
-  font-family: 'Inter', sans-serif;
-
-  background: #f5f6fa;
-
-  display: flex;
-
+  display: flex; /* Forces side-by-side layout */
   min-height: 100vh;
-
   width: 100%;
-
+  font-family: 'Inter', sans-serif;
+  background: #f5f6fa;
 }
  
+/* Sidebar Styles */
 .sidebar {
-
   width: 260px;
-
+  min-width: 260px; /* Prevents shrinking */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
   color: white;
-
   padding: 2rem 1.5rem;
-
   display: flex;
-
   flex-direction: column;
-
 }
-
-.sidebar h2 { font-size: 1.6rem; margin-bottom: 2rem; text-align: center; font-weight: 700; }
-
-.menu-item { padding: 0.9rem 1rem; border-radius: 0.75rem; margin-bottom: 0.7rem; cursor: pointer; transition: background 0.3s; }
-
+ 
+.sidebar h2 { margin-bottom: 2rem; text-align: center; }
+ 
+.menu-item {
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
 .menu-item:hover { background: rgba(255, 255, 255, 0.2); }
-
 .menu-item.active { background: rgba(255, 255, 255, 0.3); font-weight: 600; }
  
-.main { flex: 1; padding: 1.5rem 2rem; }
-
-.topbar h1 { font-size: 1.8rem; color: #333; font-weight: 700; margin-bottom: 2rem; }
- 
-.form-container {
-
-  background: white;
-
+/* Main Content Styles */
+.main-content {
+  flex: 1;
   padding: 2rem;
-
-  border-radius: 1rem;
-
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-
+  overflow-y: auto;
+}
+ 
+.topbar h1 {
+  font-size: 1.8rem;
+  color: #333;
+  margin-bottom: 2rem;
+}
+ 
+/* Form Styles */
+.form-wrapper {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
   max-width: 600px;
-
+}
+ 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
 }
  
 .form-group { margin-bottom: 1.5rem; }
-
-.form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333; }
-
-.form-group input, .form-group select, .form-group textarea {
-
+.form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #444; }
+ 
+input, select, textarea {
   width: 100%;
-
-  padding: 0.8rem;
-
+  padding: 0.75rem;
   border: 1px solid #ddd;
-
-  border-radius: 0.5rem;
-
+  border-radius: 8px;
+  font-size: 1rem;
   font-family: inherit;
-
 }
-
-.hint { font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; }
+ 
+.upload-group input {
+  border: 2px dashed #ddd;
+  padding: 1rem;
+  background: #fafafa;
+}
  
 .submit-btn {
-
   width: 100%;
-
   padding: 1rem;
-
   background: #667eea;
-
   color: white;
-
   border: none;
-
-  border-radius: 0.5rem;
-
+  border-radius: 8px;
   font-size: 1rem;
-
   font-weight: 600;
-
   cursor: pointer;
-
-  transition: 0.3s;
-
+  transition: 0.2s;
 }
-
-.submit-btn:hover:not(:disabled) { background: #5568d3; }
-
-.submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+.submit-btn:hover:not(:disabled) { background: #5a6fd6; }
+.submit-btn:disabled { background: #ccc; }
  
-.error-msg { color: #d63031; margin-bottom: 1rem; font-weight: 500; }
-
-.success-msg { color: #27ae60; margin-bottom: 1rem; font-weight: 500; }
- 
-@media(max-width: 768px) {
-
-  .sidebar { display: none; }
-
-}
+.msg { padding: 10px; border-radius: 6px; margin-bottom: 1rem; text-align: center; }
+.msg.error { background: #fee2e2; color: #dc2626; }
+.msg.success { background: #dcfce7; color: #16a34a; }
 </style>
- 
