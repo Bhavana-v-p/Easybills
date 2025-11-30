@@ -1,29 +1,34 @@
-
-// This should be initialized once and exported.
-const { initializeApp, getApps, getApp } = require('firebase/app');
-const { getStorage } = require('firebase/storage');
-const { getFirestore } = require('firebase/firestore');
-
-// Your web app's Firebase configuration - this is safe to be public
-const firebaseConfig = {
-  "projectId": "studio-7006842896-ae86d",
-  "appId": "1:566808534128:web:0fe09aad7ef1a48110a8b5",
-  "storageBucket": "studio-7006d.appspot.com",
-  "apiKey": "AIzaSyBQMaQVjiGctIU4bEaudQIz8t-_Mg-P18Q",
-  "authDomain": "studio-7006842896-ae86d.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "566808534128"
-};
-
-let firebaseApp;
-
-if (!getApps().length) {
-    firebaseApp = initializeApp(firebaseConfig);
-} else {
-    firebaseApp = getApp();
+// config/firebase.js
+const admin = require('firebase-admin');
+const path = require('path');
+const dotenv = require('dotenv');
+ 
+// Load environment variables
+dotenv.config();
+ 
+// Resolve the path to your service account key file
+// (Ensure firebase-key.json is in your backend root folder)
+const serviceAccountPath = path.resolve(process.cwd(), process.env.FIREBASE_SERVICE_ACCOUNT_PATH || 'firebase-key.json');
+ 
+try {
+  const serviceAccount = require(serviceAccountPath);
+ 
+  // Initialize the Firebase Admin SDK
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      // This pulls the correct bucket URL from your .env file
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET 
+    });
+  }
+ 
+  console.log(`Firebase Admin initialized for bucket: ${process.env.FIREBASE_STORAGE_BUCKET}`);
+ 
+} catch (error) {
+  console.error("Error initializing Firebase Admin. Check if 'firebase-key.json' exists and path is correct.", error);
 }
-
-const storage = getStorage(firebaseApp);
-const db = getFirestore(firebaseApp);
-
+ 
+const storage = admin.storage();
+const db = admin.firestore();
+ 
 module.exports = { storage, db };

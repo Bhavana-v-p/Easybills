@@ -1,25 +1,26 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router'; 
+import { useRouter } from 'vue-router'; // 1. Import Router
  
-const router = useRouter();
+const router = useRouter(); // 2. Initialize Router
  
 // State variables
 const user = ref<any>(null);
 const loading = ref(true);
  
+// 3. Define the navigate function (This was missing!)
 const navigate = (path: string) => {
   router.push(path);
 };
-
+ 
 // Fetch user data when component mounts
 onMounted(async () => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     // Call backend API to get real user data
     const response = await axios.get(`${apiUrl}/api/user/me`, {
-      withCredentials: true 
+      withCredentials: true
     });
     if (response.data.success) {
       user.value = response.data.data;
@@ -47,9 +48,9 @@ const logout = async () => {
 <h2>EasyBills</h2>
 <div class="menu-item active" @click="navigate('/dashboard')">Dashboard</div>
 <div class="menu-item" @click="navigate('/my-claims')">My Claims</div>
-<div class="menu-item">Upload Bill</div>
-<div class="menu-item">Profile</div>
-<div class="menu-item">Settings</div>
+<div class="menu-item" @click="navigate('/upload-bill')">Upload Bill</div>
+<div class="menu-item" @click="navigate('/profile')">Profile</div>
+<div class="menu-item" @click="navigate('/settings')">Settings</div>
 </div>
  
     <div class="main">
