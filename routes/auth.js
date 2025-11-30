@@ -6,7 +6,8 @@ const router = express.Router();
 // 1. Trigger Google Login
 // Matches: http://localhost:3000/auth/google
 router.get('/google', passport.authenticate('google', {
-    scope: ['profile', 'email']
+    scope: ['profile', 'email'],
+    prompt: 'login' // Forces a full password re-entry
 }));
 
 // 2. Google Callback
