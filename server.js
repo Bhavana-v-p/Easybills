@@ -40,7 +40,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Authentication middleware import
-const auth = require('./middleware/auth');
+const { isAuthenticated: auth } = require('./middleware/auth');
+ 
 // REMOVED: app.use(auth);  <--- DELETED GLOBAL AUTH (It blocks login!)
 
 // Connect to database
