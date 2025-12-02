@@ -3,6 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const { isAuthenticated } = require('../middleware/auth');
 const multer = require('multer');
 const { uploadFile } = require('../services/fileService');
 const upload = multer({
