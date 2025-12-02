@@ -31,7 +31,17 @@ router.get('/google/callback',
 router.get('/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
-        res.redirect('/login.html');
+        
+        // Destroy the session
+        req.session.destroy((err) => {
+            if (err) console.log('Session destruction error:', err);
+            
+            // Clear the cookie
+            res.clearCookie('connect.sid');
+            
+            // Send JSON success so frontend can handle the redirect
+            res.status(200).json({ success: true, message: 'Logged out successfully' });
+        });
     });
 });
 
