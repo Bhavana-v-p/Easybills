@@ -3,12 +3,26 @@
 // Authentication middleware: uses Passport session if available.
 // Falls back to the previous development stub when not authenticated and in development.
 
-module.exports.isAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) {
-        return next();
+module.exports = {
+
+    // Middleware to check if user is logged in
+
+    isAuthenticated: (req, res, next) => {
+
+        if (req.isAuthenticated()) {
+
+            return next();
+
+        }
+
+        // If not logged in, return 401 Unauthorized
+
+        res.status(401).json({ success: false, message: 'Unauthorized' });
+
     }
-    res.status(401).json({ success: false, message: 'Unauthorized' });
+
 };
+ 
 
     // Allow unauthenticated access in development for quick testing
     if (process.env.NODE_ENV !== 'production') {
