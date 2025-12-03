@@ -238,24 +238,26 @@ const getStatusColorClass = (status: string) => {
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 /* Full Page Container - Forces Side-by-Side */
+/* Main Layout Container */
 .dashboard-container {
   font-family: 'Inter', sans-serif;
   background: #f0f2f5;
   display: flex;
-  min-height: 100vh;
-  width: 100vw; /* Force full viewport width */
-  overflow-x: hidden; /* Prevent horizontal scroll */
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevents double scrollbars */
 }
 
-/* Sidebar */
+/* Fixed Sidebar */
 .sidebar {
   width: 260px;
-  flex-shrink: 0; /* Prevent sidebar from shrinking */
+  flex-shrink: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
+  z-index: 10;
 }
 .sidebar h2 { font-size: 1.6rem; margin-bottom: 2rem; text-align: center; font-weight: 700; }
 .menu-item { padding: 0.9rem 1rem; border-radius: 0.75rem; margin-bottom: 0.7rem; cursor: pointer; transition: background 0.3s; }
@@ -271,9 +273,12 @@ const getStatusColorClass = (status: string) => {
   box-sizing: border-box;
 }
 
+/* Scrollable Part */
 .content-area {
-  padding: 2rem; /* Add padding inside the main area */
-  width: 100%;
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-y: auto; /* Only this part scrolls */
+  box-sizing: border-box;
 }
 
 /* Topbar */
@@ -359,5 +364,7 @@ const getStatusColorClass = (status: string) => {
   .claim-details { grid-template-columns: 1fr; gap: 15px; }
   .controls-bar { flex-direction: column; gap: 1rem; align-items: stretch; }
   .search-box { width: 100%; }
+  .main { width: 100vw; }
 }
+
 </style>
