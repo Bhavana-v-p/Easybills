@@ -241,71 +241,114 @@ const getStatusColorClass = (status: string) => {
  
 /* Full Page Container - Forces Side-by-Side */
 .dashboard-container {
-  display: flex;          /* Enables Flexbox */
-  height: 100vh;          /* Full Viewport Height */
-  width: 100vw;           /* Full Viewport Width */
-  overflow: hidden;       /* Prevent outer scrollbars */
   font-family: 'Inter', sans-serif;
-  background: #f9fafb;    /* Light grey background */
+  background: #f0f2f5;
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
 }
  
-/* Sidebar - Fixed Width */
+/* Sidebar */
 .sidebar {
-  width: 260px;           /* Fixed width like Gemini sidebar */
-  flex-shrink: 0;         /* Prevent shrinking */
-  background: white;      /* White background */
-  border-right: 1px solid #e5e7eb; /* Subtle separator line */
+  width: 260px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
 }
+.sidebar h2 { font-size: 1.6rem; margin-bottom: 2rem; text-align: center; font-weight: 700; }
+.menu-item { padding: 0.9rem 1rem; border-radius: 0.75rem; margin-bottom: 0.7rem; cursor: pointer; transition: background 0.3s; }
+.menu-item:hover { background: rgba(255, 255, 255, 0.2); }
+.menu-item.active { background: rgba(255, 255, 255, 0.3); font-weight: 600; }
  
-.sidebar h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #4f46e5;
-  margin-bottom: 2rem;
-  padding-left: 0.5rem;
-}
+/* Main Area */
+.main { flex: 1; padding: 2rem; }
  
-.menu-item {
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.5rem;
+/* Topbar */
+.topbar { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
+.welcome-box h1 { font-size: 1.8rem; color: #333; margin-bottom: 5px; }
+.user-sub { color: #666; font-size: 0.9rem; }
+ 
+/* Controls Bar (Search & Sort) */
+.controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 1rem;
   border-radius: 8px;
-  cursor: pointer;
-  color: #4b5563;
-  font-weight: 500;
-  transition: all 0.2s;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
  
-.menu-item:hover {
-  background-color: #f3f4f6;
-  color: #111827;
+.search-box { position: relative; width: 300px; }
+.search-input {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  padding-right: 2.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+.search-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #888; }
+ 
+.sort-box { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #555; }
+.sort-select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; color: #333; cursor: pointer; }
+ 
+/* Legend */
+.status-legend { display: flex; gap: 15px; font-size: 0.85rem; color: #555; margin-left: 2rem; margin-top: 10px; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.green { background: #2ecc71; } .purple { background: #9b59b6; } .red { background: #e74c3c; } .orange { background: #f39c12; }
+ 
+.logout-btn { padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; }
+ 
+/* Claims List */
+.claims-list-container { display: flex; flex-direction: column; gap: 15px; }
+ 
+.claim-card {
+  background: white; border-radius: 4px; padding: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: flex; position: relative; overflow: hidden; min-height: 80px;
 }
  
-.menu-item.active {
-  background-color: #e0e7ff; /* Light indigo active state */
-  color: #4338ca;
+.corner-indicator {
+  position: absolute; top: 0; right: 0; width: 0; height: 0;
+  border-style: solid; border-width: 0 20px 20px 0;
+  border-color: transparent #ccc transparent transparent;
+}
+.corner-indicator.status-approved { border-right-color: #2ecc71; }
+.corner-indicator.status-pending { border-right-color: #f39c12; }
+.corner-indicator.status-rejected { border-right-color: #e74c3c; }
+ 
+.claim-details {
+  display: grid; grid-template-columns: 1.5fr 2fr 2fr 2fr;
+  width: 100%; padding: 1.2rem; align-items: center;
 }
  
-/* Main Content - Fills Remaining Space */
-.main {
-  flex-grow: 1;           /* Take up all remaining width */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;       /* Contain scrolling inside main */
-}
+.detail-col { display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: #333; }
+.row { display: flex; gap: 5px; }
+.label { color: #777; } .value { color: #333; font-weight: 500; }
+.claim-link { color: #667eea; text-decoration: underline; cursor: pointer; }
  
-/* Scrollable Content Area */
-.content-area {
-  flex-grow: 1;
-  overflow-y: auto;       /* Scroll ONLY the content, not the sidebar */
-  padding: 2rem;
-}
+.status-text { font-weight: 600; }
+.status-text.status-approved { color: #2ecc71; }
+.status-text.status-pending { color: #f39c12; }
+.status-text.status-rejected { color: #e74c3c; }
  
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .sidebar { display: none; } /* Hide sidebar on mobile */
-  .dashboard-container { flex-direction: column; }
+/* Pagination */
+.pagination-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid #ddd; }
+.page-actions button { padding: 5px 15px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; margin-left: 10px; }
+.page-actions button:disabled { background: #eee; cursor: not-allowed; }
+ 
+@media(max-width: 768px) {
+  .sidebar { display: none; }
+  .claim-details { grid-template-columns: 1fr; gap: 15px; }
+  .controls-bar { flex-direction: column; gap: 1rem; align-items: stretch; }
+  .search-box { width: 100%; }
 }
 </style>
+ 
+ 
+ 
