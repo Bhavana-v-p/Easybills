@@ -99,17 +99,17 @@ const getInitials = (email: string) => {
 };
  
 const getNameFromEmail = (email: string) => {
-    // 1. Safety check for empty email
+    // 1. Handle empty email
     if (!email) return 'User';
     
     // 2. Split the email
     const parts = email.split('@');
     
-    // 3. Get the first part safely
+    // 3. Extract the first part safely
     const namePart = parts[0];
 
-    // 4. Strict check: verify it exists and is a string before using it
-    if (typeof namePart === 'string' && namePart.length > 0) {
+    // 4. Check if namePart exists BEFORE using it
+    if (namePart) {
         return namePart.charAt(0).toUpperCase() + namePart.slice(1);
     }
     
