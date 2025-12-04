@@ -99,17 +99,23 @@ const getInitials = (email: string) => {
 };
  
 const getNameFromEmail = (email: string) => {
+    // 1. Handle empty email
     if (!email) return 'User';
+    
+    // 2. Split the email
     const parts = email.split('@');
     
-    // Safety check: Ensure parts exists and has at least one item
-    if (parts && parts.length > 0 && parts[0]) {
-        const namePart = parts[0];
+    // 3. FORCE string type (The Magic Fix)
+    // If parts[0] is undefined, it becomes an empty string. TypeScript loves this.
+    const namePart = parts[0] || '';
+
+    // 4. Use it safely
+    if (namePart.length > 0) {
         return namePart.charAt(0).toUpperCase() + namePart.slice(1);
     }
     
     return 'User';
-}
+};
 </script>
  
 <template>
