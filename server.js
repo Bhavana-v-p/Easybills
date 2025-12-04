@@ -51,6 +51,9 @@ connectDB().catch((err) => {
 });
 
 // Routes
+app.get('/', (req, res) => {
+    res.status(200).send('EasyBills Backend is Running!'); 
+});
 app.use('/auth', authRoutes); // Public: Allow access to login routes
 app.use('/api', auth, claimsRoutes); // Protected: Apply auth middleware here
 app.use('/api/user', auth, userRoutes); // Protected: Apply auth middleware here
