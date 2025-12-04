@@ -32,9 +32,9 @@ const ExpenseClaim = sequelize.define('ExpenseClaim', {
     },
     // Tracking and Approval Status
     status: {
-        type: DataTypes.ENUM('submitted', 'verified', 'approved', 'paid', 'clarification needed'),
+        type: DataTypes.ENUM('draft', 'submitted', 'verified', 'approved', 'paid', 'clarification needed'),
         allowNull: false,
-        defaultValue: 'submitted'
+        defaultValue: 'draft'
     },
     // Store documents and audit trail as JSONB arrays (PostgreSQL data type)
     documents: {
