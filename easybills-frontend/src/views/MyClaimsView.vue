@@ -5,12 +5,15 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 
 import { useRouter } from 'vue-router';
- 
+import TopNavBar from '../components/TopNavBar.vue';
+import LogoutModal from '../components/LogoutModal.vue';
+
 const router = useRouter();
 
 const claims = ref<any[]>([]);
 
 const loading = ref(true);
+const showLogoutModal = ref(false);
  
 // Fetch claims on load
 
@@ -57,6 +60,14 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString();
 
 };
+const handleLogoutConfirm = async () => {
+   const apiUrl = import.meta.env.VITE_API_BASE_URL;
+   try {
+       await axios.get(`${apiUrl}/auth/logout`, { withCredentials: true });
+   } catch (e) { console.error(e); }
+   window.location.href = 'http://localhost:3000/landing.html';
+};
+ 
 </script>
  
 <template>
@@ -70,7 +81,8 @@ const formatDate = (dateString: string) => {
 <div class="menu-item" @click="navigate('/settings')">Settings</div>
 </div>
  
-    <div class="main">
+    <div class="main-content">
+      <TopNavBar pageTitle="My Claims" @logout-request="showLogoutModal = true" />
 <div class="topbar">
 <h1>My Claims History</h1>
 </div>
@@ -109,6 +121,12 @@ const formatDate = (dateString: string) => {
 </table>
 </div>
 </div>
+ 
+    <LogoutModal
+        v-if="showLogoutModal"
+        @close="showLogoutModal = false"
+        @confirm="handleLogoutConfirm"
+    />
 </div>
 </template>
  
