@@ -13,7 +13,7 @@ const userRoutes = require('./routes/user');
 dotenv.config(); 
 
 const app = express();
-
+app.set('trust proxy', 1);
 // CORS Configuration for Vue.js Frontend
 const corsOptions = {
     origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
