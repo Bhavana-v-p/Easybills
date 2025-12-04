@@ -1,46 +1,34 @@
-// routes/auth.js
 const express = require('express');
 const passport = require('passport');
 const router = express.Router();
 
-// 1. Trigger Google Login
-// Matches: http://localhost:3000/auth/google
+// 1. Initiate Google Login
+// Route: /auth/google
 router.get('/google', passport.authenticate('google', {
     scope: ['profile', 'email'],
-    prompt: 'login' // Forces a full password re-entry
+    prompt: 'select_account'
 }));
 
 // 2. Google Callback
-// Matches: http://localhost:3000/auth/google/callback
+// Route: /auth/google/callback
 router.get('/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login.html' }),
+    passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
         // Successful authentication
-        console.log('User logged in:', req.user.email);
-        
-        // Redirect to your frontend dashboard (or demo page)
-        // Since you are using Vue locally on port 5173, redirect there:
-        res.redirect('http://localhost:5173/dashboard'); 
-        
-        // OR if testing with the static index.html you uploaded:
-        // res.redirect('/index.html');
+        // Redirect to your Frontend Dashboard (Vercel or Localhost)
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/dashboard`);
     }
 );
 
-// 3. Logout Route
+// 3. Logout
+// Route: /auth/logout
 router.get('/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
-        
-        // Destroy the session
         req.session.destroy((err) => {
-            if (err) console.log('Session destruction error:', err);
-            
-            // Clear the cookie
             res.clearCookie('connect.sid');
-            
-            // Send JSON success so frontend can handle the redirect
-            res.status(200).json({ success: true, message: 'Logged out successfully' });
+            res.status(200).json({ success: true, message: 'Logged out' });
         });
     });
 });
