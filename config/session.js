@@ -1,12 +1,28 @@
+// config/session.js
+
 const session = require('express-session');
-
-// FIX: Import it this way for v7+
-
-let RedisStore = require('connect-redis').default;
 
 const { createClient } = require('redis');
 
 const dotenv = require('dotenv');
+ 
+
+
+let RedisStore = require('connect-redis');
+ 
+// Check if it's version 7+ (has .default) or version 6 (is a function)
+
+if (RedisStore.default) {
+
+    RedisStore = RedisStore.default;
+
+} else if (typeof RedisStore === 'function') {
+
+    // Version 6 fallback: Initialize with session
+
+    RedisStore = RedisStore(session);
+
+}
  
 dotenv.config();
  
@@ -28,13 +44,13 @@ redisClient.on('error', (err) => console.error('Redis Client Error', err));
 
 redisClient.on('connect', () => console.log('Connected to Redis for Sessions'));
  
+// Connect to Redis asynchronously
+
 redisClient.connect().catch(console.error);
  
 // 2. Create Session Middleware
 
 const sessionMiddleware = session({
-
-    // FIX: Pass client directly here
 
     store: new RedisStore({
 
@@ -56,7 +72,7 @@ const sessionMiddleware = session({
 
         httpOnly: true,
 
-        maxAge: 24 * 60 * 60 * 1000,
+        maxAge: 24 * 60 * 60 * 1000, // 1 Day
 
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
 
