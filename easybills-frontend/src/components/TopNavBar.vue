@@ -99,21 +99,25 @@ const getInitials = (email: string) => {
 };
  
 const getNameFromEmail = (email: string) => {
-    if (!email) return 'User';
+    // 1. Basic validation
+    if (!email || typeof email !== 'string') return 'User';
     
-    const parts = email.split('@');
+    // 2. Find the "@" symbol
+    const atIndex = email.indexOf('@');
     
-    // Check if parts exist
-    if (parts && parts.length > 0) {
-        // @ts-ignore: Suppress strict undefined check for deployment
-        const namePart = parts[0];
-        
-        // @ts-ignore: Suppress strict check
-        return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    // 3. If no "@", just capitalize the whole thing
+    if (atIndex === -1) {
+        return email.charAt(0).toUpperCase() + email.slice(1);
     }
     
-    return 'User';
-};
+    // 4. Extract the name part safely
+    const namePart = email.substring(0, atIndex);
+    
+    // 5. One last check to be sure it's not empty
+    if (namePart.length === 0) return 'User';
+
+    return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+}
 </script>
  
 <template>
