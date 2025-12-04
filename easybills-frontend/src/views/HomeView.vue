@@ -1,10 +1,11 @@
 <script setup lang="ts">
-// Function to handle Google Login
 const loginWithGoogle = () => {
-  // Use the environment variable pointing to your Render Backend
-  const apiUrl = import.meta.env.VITE_API_BASE_URL;
-  // Redirect browser to the backend auth route
-  window.location.href = `${apiUrl}/auth/google`;
+  // Use the VITE_API_BASE_URL from your .env file
+  const backendUrl = import.meta.env.VITE_API_BASE_URL;
+  
+  // Redirect the user to your BACKEND's auth route
+  // This route (on the backend) knows the Client ID, Secret, and Redirect URI
+  window.location.href = `${backendUrl}/auth/google`;
 };
 </script>
 
