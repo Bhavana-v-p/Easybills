@@ -6,29 +6,17 @@ const { createClient } = require('redis');
 
 const dotenv = require('dotenv');
  
+// 👇 DIRECT V7 IMPORT (The fix)
 
-
-let RedisStore = require('connect-redis');
- 
-// Check if it's version 7+ (has .default) or version 6 (is a function)
-
-if (RedisStore.default) {
-
-    RedisStore = RedisStore.default;
-
-} else if (typeof RedisStore === 'function') {
-
-    // Version 6 fallback: Initialize with session
-
-    RedisStore = RedisStore(session);
-
-}
+const RedisStore = require('connect-redis').default;
  
 dotenv.config();
  
 // 1. Initialize Redis Client
 
 const redisClient = createClient({
+
+    // Uses REDIS_URL from Render or localhost for dev
 
     url: process.env.REDIS_URL || 'redis://localhost:6379',
 
@@ -52,6 +40,8 @@ redisClient.connect().catch(console.error);
 
 const sessionMiddleware = session({
 
+    // 👇 Pass client directly to the store
+
     store: new RedisStore({
 
         client: redisClient,
@@ -62,7 +52,7 @@ const sessionMiddleware = session({
 
     secret: process.env.SESSION_SECRET || 'dev_secret_key',
 
-    resave: false,
+    resave: false,             
 
     saveUninitialized: false,
 
