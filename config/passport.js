@@ -24,18 +24,24 @@ passport.use(new GoogleStrategy({
 },
 async (req, accessToken, refreshToken, profile, done) => {
     try {
-        // Check if user already exists
-        const existingUser = await User.findOne({ where: { googleId: profile.id } });
+        // Check if user exists
+        let user = await User.findOne({ where: { googleId: profile.id } });
 
-        if (existingUser) {
-            return done(null, existingUser);
+        if (user) {
+            // 👇 OPTIONAL: Update name if it's missing
+            if (!user.name) {
+                user.name = profile.displayName;
+                await user.save();
+            }
+            return done(null, user);
         }
 
-        // If new user, create them in the database
+        // Create new user with NAME
         const newUser = await User.create({
             googleId: profile.id,
             email: profile.emails[0].value,
-            role: 'Faculty' // Default role as per your User.js model
+            name: profile.displayName, // 👈 SAVE THE NAME HERE
+            role: 'Faculty'
         });
 
         return done(null, newUser);
@@ -44,5 +50,7 @@ async (req, accessToken, refreshToken, profile, done) => {
         return done(err, null);
     }
 }));
+
+
 
 module.exports = passport;

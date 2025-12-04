@@ -127,8 +127,12 @@ const getStatusColorClass = (status: string) => {
         <div class="topbar">
           <div class="welcome-box">
             <h1>Dashboard Overview</h1>
-            <p v-if="user" class="user-sub">Welcome back, {{ user.email }}</p>
+            <p v-if="user" class="user-sub">
+                Welcome back, {{ user.name || user.email }}
+            </p>
           </div>
+
+
           
           <div class="status-legend">
             <span class="legend-item"><span class="dot green"></span> Disbursed</span>
