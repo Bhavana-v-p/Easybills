@@ -105,16 +105,16 @@ const getNameFromEmail = (email: string) => {
     // 2. Split the email
     const parts = email.split('@');
     
-    // 3. Extract the first part safely
+    // 3. Extract the first part
     const namePart = parts[0];
 
-    // 4. Check if namePart exists BEFORE using it
+    // 4. SAFETY CHECK: Only use it if it exists
     if (namePart) {
         return namePart.charAt(0).toUpperCase() + namePart.slice(1);
     }
     
     return 'User';
-}
+};
 </script>
  
 <template>
