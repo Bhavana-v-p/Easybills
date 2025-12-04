@@ -115,6 +115,7 @@ const getNameFromEmail = (email: string) => {
     
     return 'User';
 };
+  
 </script>
  
 <template>
