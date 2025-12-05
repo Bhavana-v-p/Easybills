@@ -83,9 +83,10 @@ app.get('/auth/google', (req, res, next) => {
 
 // Route: Callback
 // Accepts both /callback and /callback/
-app.get(['/auth/google/callback', '/auth/google/callback/'],
+// Find the callback route and CHANGE the path
+app.get('/oauth/callback',  // 👈 CHANGED FROM /auth/google/callback
     (req, res, next) => {
-        console.log('🔄 GOOGLE CALLBACK RECEIVED');
+        console.log('🔄 NEW CALLBACK HIT');
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
         passport.authenticate('google', { 
             failureRedirect: '/',
@@ -93,11 +94,9 @@ app.get(['/auth/google/callback', '/auth/google/callback/'],
         })(req, res, next);
     },
     (req, res) => {
-        console.log('✅ AUTH SUCCESS:', req.user.email);
+        console.log('✅ AUTH SUCCESS');
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        
         req.session.save((err) => {
-            if (err) console.error('Session save error:', err);
             res.redirect(`${frontendUrl}/dashboard`);
         });
     }
