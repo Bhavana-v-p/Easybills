@@ -1,34 +1,25 @@
 // config/session.js
 const session = require('express-session');
-const { createClient } = require('redis');
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
+const { sequelize } = require('./db'); // Import your existing DB connection
 const dotenv = require('dotenv');
-
-// 👇 CORRECT V7 IMPORT SYNTAX
-const RedisStore = require('connect-redis').default;
 
 dotenv.config();
 
-// 1. Initialize Redis Client
-const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
-    socket: {
-        reconnectStrategy: (retries) => Math.min(retries * 50, 1000)
-    }
+// 1. Initialize the Session Store using Sequelize (Postgres)
+const sessionStore = new SequelizeStore({
+    db: sequelize,
+    tableName: 'Sessions', // Optional: Table name in DB
+    checkExpirationInterval: 15 * 60 * 1000, // Clean up expired sessions every 15 mins
+    expiration: 24 * 60 * 60 * 1000 // Sessions last 1 Day
 });
 
-redisClient.on('error', (err) => console.error('Redis Client Error', err));
-redisClient.on('connect', () => console.log('Connected to Redis for Sessions'));
+// Create the table automatically if it doesn't exist
+sessionStore.sync();
 
-// Connect to Redis asynchronously
-redisClient.connect().catch(console.error);
-
-// 2. Create Session Middleware
+// 2. Configure Session Middleware
 const sessionMiddleware = session({
-    // 👇 CORRECT V7 USAGE: Pass client directly
-    store: new RedisStore({
-        client: redisClient,
-        prefix: 'easybills_sess:',
-    }),
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || 'dev_secret_key',
     resave: false,
     saveUninitialized: false,
