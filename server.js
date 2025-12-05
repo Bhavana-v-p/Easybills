@@ -11,12 +11,16 @@ const path = require('path');
 const passport = require('passport');
 
 const session = require('express-session');
+ 
+// 👇 NEW: Import Sequelize Session Store
 
-const { createClient } = require('redis');
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
+ 
+// Import Database Connection and Sequelize Instance
 
-const connectRedis = require('connect-redis');
+// (We need 'sequelize' to create the session table)
 
-const { connectDB } = require('./config/db');
+const { connectDB, sequelize } = require('./config/db');
  
 // Load environment variables
 
@@ -52,39 +56,27 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(express.static(path.join(__dirname, 'public')));
  
-// 4. Session Setup (Redis)
+// 4. Session Setup (PostgreSQL)
 
-// Initialize Redis Client
+// Initialize the Session Store
 
-const redisClient = createClient({
+const sessionStore = new SequelizeStore({
 
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    db: sequelize,
 
-    socket: {
+    tableName: 'Sessions', // Creates a 'Sessions' table in your DB
 
-        reconnectStrategy: (retries) => Math.min(retries * 50, 1000)
+    checkExpirationInterval: 15 * 60 * 1000, // Cleanup expired sessions every 15 min
 
-    }
+    expiration: 24 * 60 * 60 * 1000 // Sessions expire after 1 day
 
 });
-
-redisClient.on('error', (err) => console.error('Redis Client Error', err));
-
-redisClient.connect().catch(console.error);
  
-// Configure RedisStore (Universal Fix for v6/v7)
-
-let RedisStore = connectRedis.default || connectRedis;
+// Configure Session Middleware
 
 const sessionMiddleware = session({
 
-    store: new RedisStore({
-
-        client: redisClient,
-
-        prefix: 'easybills_sess:',
-
-    }),
+    store: sessionStore,
 
     secret: process.env.SESSION_SECRET || 'dev_secret_key',
 
@@ -108,9 +100,13 @@ const sessionMiddleware = session({
  
 app.use(sessionMiddleware);
  
+// Sync the session store (Creates the table if missing)
+
+sessionStore.sync();
+ 
 // 5. Passport Config
 
-require('./config/passport'); // Ensure this file exists and configures the strategy
+require('./config/passport'); 
 
 app.use(passport.initialize());
 
@@ -118,7 +114,7 @@ app.use(passport.session());
  
 // ==================================================================
 
-// 👇 AUTH ROUTES (Hardcoded here to prevent "Cannot GET" errors) 👇
+// 👇 AUTH ROUTES (Hardcoded to prevent "Cannot GET" errors) 👇
 
 // ==================================================================
  
@@ -126,7 +122,7 @@ app.use(passport.session());
 
 app.get('/auth/google', (req, res, next) => {
 
-    console.log('Login started...'); // Debug Log
+    console.log('Login started...'); 
 
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
 
@@ -148,9 +144,7 @@ app.get('/auth/google/callback',
 
     (req, res, next) => {
 
-        console.log('Google returned to callback...'); // Debug Log
-
-        // Force the callback URL again to be safe
+        console.log('Google returned to callback...');
 
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
 
@@ -218,9 +212,9 @@ const claimsRoutes = require('./routes/claims');
 
 const userRoutes = require('./routes/user');
  
-app.use('/api', claimsRoutes); // Ensure routes/claims.js exists
+app.use('/api', claimsRoutes);
 
-app.use('/api/user', userRoutes); // Ensure routes/user.js exists
+app.use('/api/user', userRoutes);
  
 // Health Check
 
