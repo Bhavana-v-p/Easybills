@@ -68,6 +68,7 @@ app.use(passport.session());
 app.get('/auth/google', (req, res, next) => {
     console.log('🚀 LOGIN INITIATED');
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
+    onsole.log('🔍 DEBUG: callbackURL is:', callbackURL ? `'${callbackURL}'` : 'UNDEFINED');
     passport.authenticate('google', {
         scope: ['profile', 'email'],
         prompt: 'select_account',
