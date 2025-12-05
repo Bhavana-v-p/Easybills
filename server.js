@@ -72,6 +72,9 @@ app.use(passport.session());
 // ==================================================================
 
 // Login Route
+app.get(['/api/auth/google/callback', '/auth/google/callback/'], (req, res) => {
+    res.redirect('/auth/google/callback');
+});
 app.get('/auth/google', (req, res, next) => {
     console.log('🚀 Starting Google Login...');
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
@@ -81,6 +84,7 @@ app.get('/auth/google', (req, res, next) => {
         callbackURL: callbackURL
     })(req, res, next);
 });
+
 
 // Callback Route
 app.get('/auth/google/callback', 
