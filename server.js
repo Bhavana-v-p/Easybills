@@ -82,7 +82,8 @@ app.get('/auth/google', (req, res, next) => {
 });
 
 // Route: Callback
-app.get('/auth/google/callback', 
+// Accepts both /callback and /callback/
+app.get(['/auth/google/callback', '/auth/google/callback/'],
     (req, res, next) => {
         console.log('🔄 GOOGLE CALLBACK RECEIVED');
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
