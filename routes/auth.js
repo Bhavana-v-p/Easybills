@@ -1,14 +1,20 @@
 const express = require('express');
 const passport = require('passport');
 const router = express.Router();
-
+ 
 // 1. Initiate Google Login
 // Route: /auth/google
-router.get('/google', passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    prompt: 'select_account'
-}));
-
+router.get('/google', (req, res, next) => {
+    // 👇 Get the URL directly from the environment at runtime
+    const callbackURL = process.env.GOOGLE_CALLBACK_URL;
+    // 👇 Pass it explicitly to the authenticate function
+    passport.authenticate('google', {
+        scope: ['profile', 'email'],
+        prompt: 'select_account',
+        callbackURL: callbackURL
+    })(req, res, next);
+});
+ 
 // 2. Google Callback
 // Route: /auth/google/callback
 router.get('/google/callback', 
@@ -20,7 +26,7 @@ router.get('/google/callback',
         res.redirect(`${frontendUrl}/dashboard`);
     }
 );
-
+ 
 // 3. Logout
 // Route: /auth/logout
 router.get('/logout', (req, res, next) => {
@@ -32,5 +38,5 @@ router.get('/logout', (req, res, next) => {
         });
     });
 });
-
+ 
 module.exports = router;
