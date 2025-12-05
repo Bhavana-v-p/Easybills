@@ -3,9 +3,8 @@ const session = require('express-session');
 const { createClient } = require('redis');
 const dotenv = require('dotenv');
 
-// 👇 SAFE IMPORT PATTERN
-// This pattern works by initializing the store with the session object directly
-let RedisStore = require('connect-redis')(session);
+// 👇 CORRECT V7 IMPORT SYNTAX
+const RedisStore = require('connect-redis').default;
 
 dotenv.config();
 
@@ -25,6 +24,7 @@ redisClient.connect().catch(console.error);
 
 // 2. Create Session Middleware
 const sessionMiddleware = session({
+    // 👇 CORRECT V7 USAGE: Pass client directly
     store: new RedisStore({
         client: redisClient,
         prefix: 'easybills_sess:',
