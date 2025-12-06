@@ -96,8 +96,7 @@ app.get('/oauth/callback',  // 👈 CHANGED FROM /auth/google/callback
     (req, res) => {
         console.log('✅ AUTH SUCCESS');
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        req.session.save((err) => {
-            res.redirect(`${frontendUrl}/dashboard`);
+        res.redirect(`${frontendUrl}/dashboard`);
         });
     }
 );
