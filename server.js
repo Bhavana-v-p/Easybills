@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
@@ -50,7 +51,7 @@ app.use(session({
         maxAge: 24 * 60 * 60 * 1000,
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     }
-});
+}));
 
 sessionStore.sync(); 
 require('./config/passport'); 
@@ -58,7 +59,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==================================================================
-// 👇 AUTH ROUTES (UPDATED TO MATCH /oauth/callback) 👇
+// 👇 AUTH ROUTES 👇
 // ==================================================================
 
 // 1. Start Login
@@ -73,10 +74,10 @@ app.get('/auth/google', (req, res, next) => {
     })(req, res, next);
 });
 
-// 2. Callback Route (MATCHING YOUR ENV VARIABLE)
-app.get('/oauth/callback', 
+// 2. Callback Route (Matches /oauth/callback AND /auth/google/callback)
+app.get(['/oauth/callback', '/auth/google/callback'], 
     (req, res, next) => {
-        console.log('✅ CALLBACK HIT at /oauth/callback');
+        console.log('✅ CALLBACK HIT at:', req.url);
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
         passport.authenticate('google', { 
             failureRedirect: '/',
@@ -86,15 +87,19 @@ app.get('/oauth/callback',
     (req, res) => {
         console.log('🎉 AUTH SUCCESS');
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        req.session.save(() => res.redirect(`${frontendUrl}/dashboard`));
+        
+        req.session.save((err) => {
+            if (err) console.error('Session Save Error:', err);
+            res.redirect(`${frontendUrl}/dashboard`);
+        });
     }
 );
 
 // 3. Logout
 app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
-        if (err) return next(err);
-        req.session.destroy(() => {
+        if (err) { return next(err); }
+        req.session.destroy((err) => {
             res.clearCookie('connect.sid');
             res.status(200).json({ success: true, message: 'Logged out' });
         });
@@ -106,24 +111,15 @@ app.get('/auth/logout', (req, res, next) => {
 app.use('/api', require('./routes/claims'));
 app.use('/api/user', require('./routes/user'));
 
-app.get('/', (req, res) => res.send('Backend Running'));
-
-// DEBUG: Verify routes on startup
-function printRoutes() {
-    console.log('\n--- REGISTERED ROUTES ---');
-    app._router.stack.forEach((r) => {
-        if (r.route && r.route.path) {
-            console.log(`${Object.keys(r.route.methods).join(', ').toUpperCase()} ${r.route.path}`);
-        }
-    });
-}
+app.get('/', (req, res) => {
+    res.status(200).send('EasyBills Backend is Running!');
+});
 
 connectDB().then(() => {
     const http = require('http');
     const server = http.createServer(app);
     server.listen(PORT, () => {
         console.log(`EasyBills server running on port ${PORT}`);
-        printRoutes(); 
     });
 }).catch((err) => {
     console.error('Failed to connect to database:', err);
