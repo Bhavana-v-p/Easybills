@@ -13,14 +13,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 1. Trust Proxy
 app.set('trust proxy', 1);
 
-// Logger
+// 2. Request Logger
 app.use((req, res, next) => {
     console.log(`👉 [REQUEST] ${req.method} ${req.url}`);
     next();
 });
 
+// 3. CORS
 const corsOptions = {
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
@@ -29,10 +31,12 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// 4. Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 5. Session Setup
 const sessionStore = new SequelizeStore({
     db: sequelize,
     tableName: 'Sessions',
@@ -62,10 +66,10 @@ app.use(passport.session());
 // 👇 AUTH ROUTES 👇
 // ==================================================================
 
-// 1. Start Login
+// Route 1: Start Login
 app.get('/auth/google', (req, res, next) => {
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
-    console.log('🚀 LOGIN START. Using Callback:', callbackURL);
+    console.log('🚀 LOGIN START. Callback:', callbackURL);
     
     passport.authenticate('google', {
         scope: ['profile', 'email'],
@@ -74,11 +78,12 @@ app.get('/auth/google', (req, res, next) => {
     })(req, res, next);
 });
 
-// 2. Callback Route (Matches /oauth/callback AND /auth/google/callback)
+// Route 2: Google Callback (UPDATED to accept /oauth/callback)
 app.get(['/oauth/callback', '/auth/google/callback'], 
     (req, res, next) => {
-        console.log('✅ CALLBACK HIT at:', req.url);
+        console.log('✅ CALLBACK HIT at:', req.path);
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
+        
         passport.authenticate('google', { 
             failureRedirect: '/',
             callbackURL: callbackURL 
@@ -95,7 +100,7 @@ app.get(['/oauth/callback', '/auth/google/callback'],
     }
 );
 
-// 3. Logout
+// Route 3: Logout
 app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
