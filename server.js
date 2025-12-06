@@ -5,7 +5,6 @@ const cors = require('cors');
 const path = require('path');
 const passport = require('passport');
 const session = require('express-session');
-// Use Sequelize Session Store
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const { connectDB, sequelize } = require('./config/db');
 
@@ -15,10 +14,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 1. Trust Proxy
+// 1. Trust Proxy (REQUIRED for Render HTTPS)
 app.set('trust proxy', 1);
 
-// 2. Request Logger (Shows what URL is hitting the server)
+// 2. Request Logger
 app.use((req, res, next) => {
     console.log(`👉 [REQUEST] ${req.method} ${req.url}`);
     next();
@@ -67,10 +66,10 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==================================================================
-// 👇 AUTH ROUTES (Defined explicitly) 👇
+// 👇 AUTH ROUTES (FIXED PATH) 👇
 // ==================================================================
 
-// Route: Start Login
+// Route 1: Start Login
 app.get('/auth/google', (req, res, next) => {
     console.log('🚀 LOGIN INITIATED');
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
@@ -81,12 +80,10 @@ app.get('/auth/google', (req, res, next) => {
     })(req, res, next);
 });
 
-// Route: Callback
-// Accepts both /callback and /callback/
-// Find the callback route and CHANGE the path
-app.get('/oauth/callback',  // 👈 CHANGED FROM /auth/google/callback
+// Route 2: Google Callback (Reverted to match your Google Console)
+app.get('/auth/google/callback', 
     (req, res, next) => {
-        console.log('🔄 NEW CALLBACK HIT');
+        console.log('🔄 GOOGLE CALLBACK RECEIVED');
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
         passport.authenticate('google', { 
             failureRedirect: '/',
@@ -96,12 +93,13 @@ app.get('/oauth/callback',  // 👈 CHANGED FROM /auth/google/callback
     (req, res) => {
         console.log('✅ AUTH SUCCESS');
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        
+        // Simple redirect (session saves automatically)
         res.redirect(`${frontendUrl}/dashboard`);
-        });
     }
 );
 
-// Route: Logout
+// Route 3: Logout
 app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
@@ -115,27 +113,13 @@ app.get('/auth/logout', (req, res, next) => {
 // ==================================================================
 
 // API Routes
-const claimsRoutes = require('./routes/claims');
-const userRoutes = require('./routes/user');
-
-app.use('/api', claimsRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api', require('./routes/claims'));
+app.use('/api/user', require('./routes/user'));
 
 // Health Check
 app.get('/', (req, res) => {
     res.status(200).send('EasyBills Backend is Running!');
 });
-
-// DEBUG: Print all registered routes
-function printRoutes() {
-    console.log('\n--- REGISTERED ROUTES ---');
-    app._router.stack.forEach((r) => {
-        if (r.route && r.route.path) {
-            console.log(`${Object.keys(r.route.methods).join(', ').toUpperCase()} ${r.route.path}`);
-        }
-    });
-    console.log('-------------------------\n');
-}
 
 // Start Server
 connectDB().then(() => {
@@ -144,7 +128,6 @@ connectDB().then(() => {
     
     server.listen(PORT, () => {
         console.log(`EasyBills server running on port ${PORT}`);
-        printRoutes(); // 👈 CHECK THIS IN RENDER LOGS
     });
 }).catch((err) => {
     console.error('Failed to connect to database:', err);
