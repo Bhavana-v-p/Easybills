@@ -74,10 +74,15 @@ app.get('/auth/google', (req, res, next) => {
 
 // Route 2: Google Callback (UPDATED TO MATCH YOUR ERROR)
 // We listen on BOTH paths just to be safe!
-app.get(['/oauth/callback', '/auth/google/callback'], 
+// Accepts ANY of these paths
+app.get(['/oauth/callback', '/auth/google/callback', '/api/auth/google/callback'], 
     (req, res, next) => {
-        console.log('🔄 CALLBACK ROUTE HIT:', req.url);
-        const callbackURL = process.env.GOOGLE_CALLBACK_URL;
+        console.log('🔥 CALLBACK HIT AT:', req.url);
+        
+        // We must tell Passport which URL was actually used to avoid "redirect_uri_mismatch"
+        // Since we changed it in Google Console to /oauth/callback, we use that one.
+        const callbackURL = 'https://easybills-backend.onrender.com/oauth/callback';
+        
         passport.authenticate('google', { 
             failureRedirect: '/',
             callbackURL: callbackURL 
@@ -86,8 +91,6 @@ app.get(['/oauth/callback', '/auth/google/callback'],
     (req, res) => {
         console.log('✅ AUTH SUCCESS');
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        
-        // Redirect to dashboard
         res.redirect(`${frontendUrl}/dashboard`);
     }
 );
