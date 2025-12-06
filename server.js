@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
 
-// Request Logger (Verify the request hits the server)
+// Request Logger - Keep this to debug!
 app.use((req, res, next) => {
     console.log(`👉 [REQUEST] ${req.method} ${req.url}`);
     next();
@@ -51,7 +51,7 @@ app.use(session({
         maxAge: 24 * 60 * 60 * 1000,
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     }
-}));
+});
 
 sessionStore.sync(); 
 require('./config/passport'); 
@@ -59,12 +59,15 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==================================================================
-// 👇 AUTH ROUTES 👇
+// 👇 AUTH ROUTES (THE FIX) 👇
 // ==================================================================
 
 // Route 1: Start Login
 app.get('/auth/google', (req, res, next) => {
-    const callbackURL = process.env.GOOGLE_CALLBACK_URL;
+    // Ensure this matches EXACTLY what is in Google Console
+    const callbackURL = process.env.GOOGLE_CALLBACK_URL; 
+    console.log('🚀 STARTING LOGIN. Callback will be:', callbackURL);
+    
     passport.authenticate('google', {
         scope: ['profile', 'email'],
         prompt: 'select_account',
@@ -72,16 +75,11 @@ app.get('/auth/google', (req, res, next) => {
     })(req, res, next);
 });
 
-// Route 2: Google Callback (UPDATED TO MATCH YOUR ERROR)
-// We listen on BOTH paths just to be safe!
-// Accepts ANY of these paths
-app.get(['/oauth/callback', '/auth/google/callback', '/api/auth/google/callback'], 
+// Route 2: Google Callback (Accepts multiple paths to catch mismatches)
+app.get(['/oauth/callback', '/auth/google/callback'], 
     (req, res, next) => {
-        console.log('🔥 CALLBACK HIT AT:', req.url);
-        
-        // We must tell Passport which URL was actually used to avoid "redirect_uri_mismatch"
-        // Since we changed it in Google Console to /oauth/callback, we use that one.
-        const callbackURL = 'https://easybills-backend.onrender.com/oauth/callback';
+        console.log('✅ CALLBACK RECEIVED at:', req.path);
+        const callbackURL = process.env.GOOGLE_CALLBACK_URL;
         
         passport.authenticate('google', { 
             failureRedirect: '/',
@@ -89,9 +87,11 @@ app.get(['/oauth/callback', '/auth/google/callback', '/api/auth/google/callback'
         })(req, res, next);
     },
     (req, res) => {
-        console.log('✅ AUTH SUCCESS');
+        console.log('🎉 AUTH SUCCESS! Redirecting to Dashboard...');
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        res.redirect(`${frontendUrl}/dashboard`);
+        req.session.save(() => {
+            res.redirect(`${frontendUrl}/dashboard`);
+        });
     }
 );
 
@@ -108,7 +108,6 @@ app.get('/auth/logout', (req, res, next) => {
 
 // ==================================================================
 
-// Connect Routes
 app.use('/api', require('./routes/claims'));
 app.use('/api/user', require('./routes/user'));
 
