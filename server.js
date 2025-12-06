@@ -13,14 +13,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 1. Trust Proxy
 app.set('trust proxy', 1);
 
-// Request Logger - Keep this to debug!
+// 2. Request Logger
 app.use((req, res, next) => {
     console.log(`👉 [REQUEST] ${req.method} ${req.url}`);
     next();
 });
 
+// 3. CORS
 const corsOptions = {
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
@@ -29,10 +31,12 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// 4. Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 5. Session Setup
 const sessionStore = new SequelizeStore({
     db: sequelize,
     tableName: 'Sessions',
@@ -51,7 +55,7 @@ app.use(session({
         maxAge: 24 * 60 * 60 * 1000,
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     }
-});
+}));
 
 sessionStore.sync(); 
 require('./config/passport'); 
@@ -59,14 +63,13 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==================================================================
-// 👇 AUTH ROUTES (THE FIX) 👇
+// 👇 AUTH ROUTES 👇
 // ==================================================================
 
 // Route 1: Start Login
 app.get('/auth/google', (req, res, next) => {
-    // Ensure this matches EXACTLY what is in Google Console
-    const callbackURL = process.env.GOOGLE_CALLBACK_URL; 
-    console.log('🚀 STARTING LOGIN. Callback will be:', callbackURL);
+    const callbackURL = process.env.GOOGLE_CALLBACK_URL;
+    console.log('🚀 LOGIN INITIATED. Callback:', callbackURL);
     
     passport.authenticate('google', {
         scope: ['profile', 'email'],
@@ -75,10 +78,10 @@ app.get('/auth/google', (req, res, next) => {
     })(req, res, next);
 });
 
-// Route 2: Google Callback (Accepts multiple paths to catch mismatches)
+// Route 2: Google Callback (Handles both /oauth/callback and /auth/google/callback)
 app.get(['/oauth/callback', '/auth/google/callback'], 
     (req, res, next) => {
-        console.log('✅ CALLBACK RECEIVED at:', req.path);
+        console.log('🔄 CALLBACK HIT:', req.path);
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
         
         passport.authenticate('google', { 
@@ -87,9 +90,11 @@ app.get(['/oauth/callback', '/auth/google/callback'],
         })(req, res, next);
     },
     (req, res) => {
-        console.log('🎉 AUTH SUCCESS! Redirecting to Dashboard...');
+        console.log('✅ AUTH SUCCESS');
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        req.session.save(() => {
+        
+        req.session.save((err) => {
+            if (err) console.error('Session save error:', err);
             res.redirect(`${frontendUrl}/dashboard`);
         });
     }
@@ -108,13 +113,16 @@ app.get('/auth/logout', (req, res, next) => {
 
 // ==================================================================
 
+// Connect Routes
 app.use('/api', require('./routes/claims'));
 app.use('/api/user', require('./routes/user'));
 
+// Health Check
 app.get('/', (req, res) => {
     res.status(200).send('EasyBills Backend is Running!');
 });
 
+// Start Server
 connectDB().then(() => {
     const http = require('http');
     const server = http.createServer(app);
