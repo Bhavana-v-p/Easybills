@@ -13,24 +13,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 1. Trust Proxy
+// 1. Trust Proxy (REQUIRED for Render to allow secure cookies)
 app.set('trust proxy', 1);
 
-// 2. Request Logger
-app.use((req, res, next) => {
-    console.log(`👉 [REQUEST] ${req.method} ${req.url}`);
-    next();
-});
-
-// 3. CORS
+// 2. CORS - HARDCODED FIX
+// We manually type the URL to ensure no Environment Variable mistakes
 const corsOptions = {
-    // 👇 Replace process.env with the actual string to force it to work
-    origin: 'https://easybills-amber.vercel.app', 
+    origin: 'https://easybills-amber.vercel.app', // 👈 Hardcoded URL
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
+
 
 // 4. Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -38,6 +33,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 5. Session Setup
+// 5. Session Setup - HARDCODED SECURITY
 const sessionStore = new SequelizeStore({
     db: sequelize,
     tableName: 'Sessions',
@@ -47,14 +43,14 @@ const sessionStore = new SequelizeStore({
 
 app.use(session({
     store: sessionStore,
-    secret: process.env.SESSION_SECRET || 'dev_secret_key',
+    secret: process.env.SESSION_SECRET || 'super_secret_key',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: process.env.NODE_ENV === 'production', 
+        secure: true, // 👈 FORCE SECURE (Required for Vercel->Render)
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        sameSite: 'none' // 👈 FORCE NONE (Required for Cross-Site cookies)
     }
 }));
 
