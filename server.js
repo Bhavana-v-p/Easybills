@@ -8,32 +8,36 @@ const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const { connectDB, sequelize } = require('./config/db');
 
+// 👇 Import User model directly
+const User = require('./models/User'); 
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 1. Trust Proxy (REQUIRED for Render to allow secure cookies)
+// ==================================================================
+// 🔐 SECURITY & CONNECTION SETTINGS (The Fix)
+// ==================================================================
+
+// 1. Trust Proxy (Crucial for Render to allow secure cookies)
 app.set('trust proxy', 1);
 
-// 2. CORS - HARDCODED FIX
-// We manually type the URL to ensure no Environment Variable mistakes
+// 2. CORS: Explicitly allow your Vercel App
 const corsOptions = {
-    origin: 'https://easybills-amber.vercel.app', // 👈 Hardcoded URL
-    credentials: true,
+    origin: 'https://easybills-amber.vercel.app', // 👈 Hardcoded Vercel URL
+    credentials: true, // Allow cookies to be sent
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
 
-
-// 4. Middleware
+// 3. Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 5. Session Setup
-// 5. Session Setup - HARDCODED SECURITY
+// 4. Session Setup: Force "Cross-Site" Cookies
 const sessionStore = new SequelizeStore({
     db: sequelize,
     tableName: 'Sessions',
@@ -47,10 +51,10 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true, // 👈 FORCE SECURE (Required for Vercel->Render)
-        httpOnly: true,
+        secure: true,        // 👈 REQUIRED: Cookie only travels over HTTPS
+        httpOnly: true,      // Prevents JavaScript access (Security)
         maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'none' // 👈 FORCE NONE (Required for Cross-Site cookies)
+        sameSite: 'none'     // 👈 REQUIRED: Allows cookie to cross from Vercel to Render
     }
 }));
 
@@ -60,15 +64,12 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==================================================================
-// 👇 AUTH ROUTES (USING CORRECT DOMAIN) 👇
+// 👇 AUTH ROUTES 👇
 // ==================================================================
 
 // 1. Start Login
 app.get('/auth/google', (req, res, next) => {
-    // This MUST match the authorized URI in Google Console
-    // Based on your settings: https://easybills.onrender.com/auth/google/callback
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
-    
     console.log('🚀 LOGIN START. Callback:', callbackURL);
     
     passport.authenticate('google', {
@@ -79,7 +80,6 @@ app.get('/auth/google', (req, res, next) => {
 });
 
 // 2. Callback Route
-// We listen for the standard path.
 app.get('/auth/google/callback', 
     (req, res, next) => {
         console.log('✅ CALLBACK HIT at /auth/google/callback');
@@ -92,7 +92,8 @@ app.get('/auth/google/callback',
     },
     (req, res) => {
         console.log('🎉 AUTH SUCCESS');
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        // 👇 Hardcoded Frontend Redirect to ensure it goes to the right place
+        const frontendUrl = 'https://easybills-amber.vercel.app'; 
         
         req.session.save((err) => {
             if (err) console.error('Session Save Error:', err);
@@ -121,7 +122,7 @@ app.get('/', (req, res) => {
     res.status(200).send('EasyBills Backend is Running!');
 });
 
-// 404 Catcher (Debug)
+// 404 Catcher
 app.use('*', (req, res) => {
     console.log(`❌ 404 MISS: ${req.method} ${req.originalUrl}`);
     res.status(404).send(`Cannot GET ${req.originalUrl}`);
