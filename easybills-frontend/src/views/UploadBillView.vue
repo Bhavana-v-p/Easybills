@@ -100,7 +100,7 @@ const navigate = (path: string) => router.push(path);
     </div>
  
     <div class="main-content">
-      <div class="main" style="padding: 0;"> <TopNavBar pageTitle="EasyBills - Reimbursement System for Faculty" />
+      <div class="main" style="padding: 0;"> <TopNavBar pageTitle="Submit Claim" />
         <h1>Raise New Claim</h1>
       </div>
  

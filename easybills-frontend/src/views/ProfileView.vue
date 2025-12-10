@@ -106,6 +106,8 @@ const navigate = (path: string) => router.push(path);
 <template>
 <div class="page-container">
 <div class="sidebar">
+  <div class="main-content">
+      <div class="main" style="padding: 0;"> <TopNavBar pageTitle="Profile" />
 <h2>EasyBills</h2>
 <div class="menu-item" @click="navigate('/dashboard')">Dashboard</div>
 <div class="menu-item" @click="navigate('/my-claims')">My Claims</div>
