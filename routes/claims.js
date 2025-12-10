@@ -2,10 +2,20 @@
 
 const express = require('express');
 const router = express.Router();
-const { submitClaim, getFacultyClaims, updateClaimStatus, sendDemoEmail, uploadClaimDocument, getClaimDocuments } = require('../controllers/claimsController');
+const { 
+    submitClaim, 
+    getFacultyClaims, 
+    updateClaimStatus, 
+    sendDemoEmail, 
+    uploadClaimDocument, 
+    getClaimDocuments 
+} = require('../controllers/claimsController');
 const upload = require('../middleware/upload');
 
-// Faculty routes
+// ==========================================
+// 1. FACULTY ROUTES
+// ==========================================
+
 /**
  * POST /api/faculty/claims
  * Submit a new expense claim
@@ -19,6 +29,13 @@ router.post('/faculty/claims', submitClaim);
 router.get('/faculty/claims', getFacultyClaims);
 
 /**
+ * 👇 NEW ALIAS ROUTE (Fixes 404 Error) 👇
+ * GET /api/claims/my-claims
+ * Simply redirects to the same controller as above
+ */
+router.get('/claims/my-claims', getFacultyClaims);
+
+/**
  * POST /api/faculty/claims/:id/documents
  * Upload a document/receipt to a claim
  */
@@ -30,11 +47,21 @@ router.post('/faculty/claims/:id/documents', upload.single('document'), uploadCl
  */
 router.get('/faculty/claims/:id/documents', getClaimDocuments);
 
+
+// ==========================================
+// 2. FINANCE / ADMIN ROUTES
+// ==========================================
+
 /**
  * PUT /api/finance/claims/:id/status
  * Update claim status and send notification email
  */
 router.put('/finance/claims/:id/status', updateClaimStatus);
+
+
+// ==========================================
+// 3. UTILITY ROUTES
+// ==========================================
 
 /**
  * POST /api/demo/send-email
