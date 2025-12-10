@@ -2,15 +2,19 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
-// Ensure TopNavBar exists or remove if not used
 import TopNavBar from '../components/TopNavBar.vue';
 
 const router = useRouter();
 const user = ref<any>(null);
 const loading = ref(true);
+const uploading = ref(false); // To show spinner during upload
 
 // Fetch User Data
 onMounted(async () => {
+  await loadUserProfile();
+});
+
+const loadUserProfile = async () => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const response = await axios.get(`${apiUrl}/api/user/me`, { withCredentials: true });
@@ -23,9 +27,9 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-});
+};
 
-// Helper: Get Initials from Name
+// Helper: Get Initials
 const userInitials = computed(() => {
   if (!user.value || !user.value.name) return 'U';
   const names = user.value.name.split(' ');
@@ -35,18 +39,59 @@ const userInitials = computed(() => {
   return names[0][0].toUpperCase();
 });
 
-// Helper: Navigation
+// Navigation
 const navigate = (path: string) => router.push(path);
 
-// Logout Logic
+// Logout
 const handleLogout = async () => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     await axios.get(`${apiUrl}/auth/logout`, { withCredentials: true });
-    window.location.href = '/'; // Redirect to landing page
+    window.location.href = '/'; 
   } catch (error) {
     console.error('Logout failed', error);
     window.location.href = '/';
+  }
+};
+
+// 📸 PROFILE PICTURE UPLOAD LOGIC
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const triggerFileInput = () => {
+  fileInput.value?.click();
+};
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    const file = target.files[0];
+    await uploadProfilePicture(file);
+  }
+};
+
+const uploadProfilePicture = async (file: File) => {
+  if (!file) return;
+  uploading.value = true;
+
+  try {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    const formData = new FormData();
+    formData.append('picture', file);
+
+    const res = await axios.post(`${apiUrl}/api/user/picture`, formData, {
+      withCredentials: true,
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+
+    if (res.data.success) {
+      // Refresh profile to show new image
+      await loadUserProfile();
+    }
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Failed to upload profile picture.');
+  } finally {
+    uploading.value = false;
   }
 };
 </script>
@@ -60,7 +105,8 @@ const handleLogout = async () => {
       <div class="menu-item" @click="navigate('/my-claims')">My Claims</div>
       <div class="menu-item" @click="navigate('/upload-bill')">Upload Bill</div>
       <div class="menu-item active" @click="navigate('/profile')">Profile</div>
-      </div>
+      <div class="menu-item" @click="navigate('/settings')">Settings</div> 
+    </div>
 
     <div class="main-content">
       <TopNavBar pageTitle="My Profile" />
@@ -72,10 +118,28 @@ const handleLogout = async () => {
         <div v-else-if="user" class="profile-card">
           
           <div class="avatar-section">
-            <div class="avatar-circle">
-              <img v-if="user.picture" :src="user.picture" alt="Profile" class="profile-img" />
-              <span v-else class="initials">{{ userInitials }}</span>
+            <div class="avatar-wrapper" @click="triggerFileInput">
+              
+              <div class="avatar-circle">
+                <img v-if="user.picture" :src="user.picture" alt="Profile" class="profile-img" />
+                <span v-else class="initials">{{ userInitials }}</span>
+              </div>
+
+              <div class="edit-overlay">
+                <span v-if="uploading">⏳</span>
+                <span v-else>📷 Edit</span>
+              </div>
+              
             </div>
+            
+            <input 
+              type="file" 
+              ref="fileInput" 
+              class="hidden-input" 
+              accept="image/*" 
+              @change="handleFileChange"
+            />
+
             <h2 class="user-name">{{ user.name }}</h2>
             <span class="role-badge">{{ user.role }}</span>
           </div>
@@ -83,7 +147,6 @@ const handleLogout = async () => {
           <hr class="divider" />
 
           <div class="details-section">
-            
             <div class="detail-group">
               <label>Email Address</label>
               <div class="info-box">{{ user.email }}</div>
@@ -93,7 +156,6 @@ const handleLogout = async () => {
               <label>Account Status</label>
               <div class="info-box status-active">Active</div>
             </div>
-
           </div>
 
           <button class="logout-btn-large" @click="handleLogout">
@@ -162,14 +224,22 @@ const handleLogout = async () => {
   text-align: center;
 }
 
-/* AVATAR */
+/* AVATAR STYLES */
 .avatar-section { margin-bottom: 2rem; }
+
+.avatar-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1rem;
+  cursor: pointer; /* Makes it clickable */
+}
+
 .avatar-circle {
-  width: 100px;
-  height: 100px;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
-  margin: 0 auto 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -179,6 +249,28 @@ const handleLogout = async () => {
 
 .profile-img { width: 100%; height: 100%; object-fit: cover; }
 .initials { color: white; font-size: 2.5rem; font-weight: 700; }
+
+/* Edit Overlay (Appears on Hover) */
+.edit-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 0.9rem;
+}
+
+.avatar-wrapper:hover .edit-overlay {
+  opacity: 1;
+}
+
+.hidden-input { display: none; }
 
 .user-name { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0; }
 .role-badge {
@@ -209,7 +301,6 @@ const handleLogout = async () => {
   border: 1px solid #e5e7eb;
 }
 
-.code-font { font-family: monospace; letter-spacing: 0.5px; color: #666; }
 .status-active { color: #16a34a; background: #f0fdf4; border-color: #dcfce7; }
 
 /* LOGOUT BUTTON */
