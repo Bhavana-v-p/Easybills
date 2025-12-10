@@ -2,7 +2,6 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
-// Ensure these components exist in your src/components folder
 import TopNavBar from '../components/TopNavBar.vue';
 import LogoutModal from '../components/LogoutModal.vue';
 
@@ -12,18 +11,32 @@ const loading = ref(true);
 const uploading = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const showLogoutModal = ref(false);
+const debugError = ref(''); // Store errors for display
 
 // 1. Fetch User Data
 const fetchUserProfile = async () => {
+  loading.value = true;
+  debugError.value = '';
+  
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    const response = await axios.get(`${apiUrl}/api/user/me`, { withCredentials: true });
+    console.log("Fetching profile from:", `${apiUrl}/api/user/me`);
     
-    if (response.data.success) {
-      user.value = response.data.data;
+    const response = await axios.get(`${apiUrl}/api/user/me`, { withCredentials: true });
+    console.log("Profile API Response:", response.data);
+
+    if (response.data && response.data.success) {
+      // Assign data correctly based on your API structure
+      user.value = response.data.data; 
+    } else {
+      debugError.value = 'API returned success: false';
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to load profile:', error);
+    debugError.value = error.message || 'Network Error';
+    if(error.response) {
+       debugError.value += ` (${error.response.status} ${error.response.statusText})`;
+    }
   } finally {
     loading.value = false;
   }
@@ -33,7 +46,7 @@ onMounted(() => {
   fetchUserProfile();
 });
 
-// 2. Profile Picture Upload Logic
+// 2. Profile Picture Upload
 const triggerFileInput = () => {
   fileInput.value?.click();
 };
@@ -53,7 +66,7 @@ const uploadProfilePicture = async (file: File) => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const formData = new FormData();
-    formData.append('picture', file); // Ensure backend expects 'picture' field
+    formData.append('picture', file);
 
     const res = await axios.post(`${apiUrl}/api/user/picture`, formData, {
       withCredentials: true,
@@ -61,19 +74,18 @@ const uploadProfilePicture = async (file: File) => {
     });
 
     if (res.data.success) {
-      // Refresh profile to show new image immediately
       await fetchUserProfile();
       alert("Profile picture updated successfully!"); 
     }
   } catch (error) {
     console.error('Upload failed:', error);
-    alert('Failed to upload profile picture. Please try again.');
+    alert('Failed to upload profile picture.');
   } finally {
     uploading.value = false;
   }
 };
 
-// 3. Helper: Get Initials (fallback if no picture)
+// 3. Helper: Initials
 const userInitials = computed(() => {
   if (!user.value || !user.value.name) return 'U';
   const names = user.value.name.split(' ');
@@ -107,7 +119,8 @@ const handleLogoutConfirm = async () => {
       <div class="menu-item" @click="navigate('/my-claims')">My Claims</div>
       <div class="menu-item" @click="navigate('/upload-bill')">Upload Bill</div>
       <div class="menu-item active" @click="navigate('/profile')">Profile</div>
-      </div>
+      <div class="menu-item" @click="navigate('/settings')">Settings</div>
+    </div>
 
     <div class="main-content">
       <TopNavBar pageTitle="My Profile" @logout-request="showLogoutModal = true" />
@@ -116,21 +129,24 @@ const handleLogoutConfirm = async () => {
         
         <div v-if="loading" class="loading-state">Loading profile...</div>
 
+        <div v-else-if="debugError" class="error-box">
+           <h3>⚠️ Error Loading Profile</h3>
+           <p>{{ debugError }}</p>
+           <button @click="fetchUserProfile">Retry</button>
+        </div>
+
         <div v-else-if="user" class="profile-card">
           
           <div class="avatar-section">
             <div class="avatar-wrapper" @click="triggerFileInput">
-              
               <div class="avatar-circle">
                 <img v-if="user.picture" :src="user.picture" alt="Profile" class="profile-img" />
                 <span v-else class="initials">{{ userInitials }}</span>
               </div>
-
               <div class="edit-overlay">
                 <span v-if="uploading">⏳</span>
                 <span v-else>📷 Edit</span>
               </div>
-              
             </div>
             
             <input 
@@ -141,8 +157,8 @@ const handleLogoutConfirm = async () => {
               @change="handleFileChange"
             />
 
-            <h2 class="user-name">{{ user.name }}</h2>
-            <span class="role-badge">{{ user.role }}</span>
+            <h2 class="user-name">{{ user.name || 'No Name' }}</h2>
+            <span class="role-badge">{{ user.role || 'User' }}</span>
           </div>
 
           <hr class="divider" />
@@ -150,7 +166,7 @@ const handleLogoutConfirm = async () => {
           <div class="details-section">
             <div class="detail-group">
               <label>Email Address</label>
-              <div class="info-box">{{ user.email }}</div>
+              <div class="info-box">{{ user.email || 'No Email' }}</div>
             </div>
 
              <div class="detail-group">
@@ -162,8 +178,12 @@ const handleLogoutConfirm = async () => {
           <button class="logout-btn-large" @click="showLogoutModal = true">
             Logout
           </button>
-
         </div>
+
+        <div v-else class="empty-state">
+           No user data found. Please log in again.
+        </div>
+
       </div>
     </div>
 
@@ -219,6 +239,20 @@ const handleLogoutConfirm = async () => {
   justify-content: center;
   align-items: flex-start;
   min-height: 80%;
+  flex-direction: column; /* Stack debug box */
+}
+
+/* DEBUG BOX */
+.error-box {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+  width: 100%;
+  max-width: 500px;
+  align-self: center;
 }
 
 /* PROFILE CARD */
@@ -230,98 +264,46 @@ const handleLogoutConfirm = async () => {
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
   text-align: center;
+  align-self: center;
 }
 
-/* AVATAR STYLES */
 .avatar-section { margin-bottom: 2rem; }
-
-.avatar-wrapper {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 1rem;
-  cursor: pointer;
-}
-
+.avatar-wrapper { position: relative; width: 120px; height: 120px; margin: 0 auto 1rem; cursor: pointer; }
 .avatar-circle {
-  width: 100%;
-  height: 100%;
+  width: 100%; height: 100%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 4px solid #f3f4f6;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; border: 4px solid #f3f4f6;
 }
-
 .profile-img { width: 100%; height: 100%; object-fit: cover; }
 .initials { color: white; font-size: 2.5rem; font-weight: 700; }
 
-/* Edit Overlay (Appears on Hover) */
 .edit-overlay {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.2s;
-  font-size: 0.9rem;
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 600; opacity: 0; transition: opacity 0.2s; font-size: 0.9rem;
 }
-
-.avatar-wrapper:hover .edit-overlay {
-  opacity: 1;
-}
+.avatar-wrapper:hover .edit-overlay { opacity: 1; }
 
 .hidden-input { display: none; }
 
 .user-name { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0; }
 .role-badge {
-  display: inline-block;
-  background: #eef2ff;
-  color: #4f46e5;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-top: 0.5rem;
-  text-transform: uppercase;
+  display: inline-block; background: #eef2ff; color: #4f46e5;
+  padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; text-transform: uppercase;
 }
-
 .divider { border: 0; border-top: 1px solid #f3f4f6; margin: 2rem 0; }
 
-/* DETAILS */
 .details-section { text-align: left; margin-bottom: 2rem; }
 .detail-group { margin-bottom: 1.5rem; }
 .detail-group label { display: block; font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; font-weight: 500; }
-
-.info-box {
-  background: #f9fafb;
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  color: #374151;
-  font-weight: 500;
-  border: 1px solid #e5e7eb;
-}
-
+.info-box { background: #f9fafb; padding: 0.8rem 1rem; border-radius: 8px; color: #374151; font-weight: 500; border: 1px solid #e5e7eb; }
 .status-active { color: #16a34a; background: #f0fdf4; border-color: #dcfce7; }
 
-/* LOGOUT BUTTON */
 .logout-btn-large {
-  width: 100%;
-  padding: 1rem;
-  background: white;
-  border: 1px solid #fee2e2;
-  color: #dc2626;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
+  width: 100%; padding: 1rem; background: white; border: 1px solid #fee2e2; color: #dc2626; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s;
 }
 .logout-btn-large:hover { background: #fee2e2; }
 
