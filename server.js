@@ -1,4 +1,4 @@
-// server.js (Aligned with https://easybills.onrender.com)
+// server.js
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
@@ -13,26 +13,30 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 1. Trust Proxy
 app.set('trust proxy', 1);
 
-// Logger
+// 2. Request Logger
 app.use((req, res, next) => {
     console.log(`👉 [REQUEST] ${req.method} ${req.url}`);
     next();
 });
 
+// 3. CORS
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'https://easybills-amber.vercel.app', // Ensure this matches your frontend
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
 
+// 4. Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 5. Session Setup
 const sessionStore = new SequelizeStore({
     db: sequelize,
     tableName: 'Sessions',
@@ -59,13 +63,15 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==================================================================
-// 👇 AUTH ROUTES (Using Standard Paths) 👇
+// 👇 AUTH ROUTES (USING CORRECT DOMAIN) 👇
 // ==================================================================
 
 // 1. Start Login
 app.get('/auth/google', (req, res, next) => {
-    // This will now use the correct URL from your Render settings
+    // This MUST match the authorized URI in Google Console
+    // Based on your settings: https://easybills.onrender.com/auth/google/callback
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
+    
     console.log('🚀 LOGIN START. Callback:', callbackURL);
     
     passport.authenticate('google', {
@@ -76,6 +82,7 @@ app.get('/auth/google', (req, res, next) => {
 });
 
 // 2. Callback Route
+// We listen for the standard path.
 app.get('/auth/google/callback', 
     (req, res, next) => {
         console.log('✅ CALLBACK HIT at /auth/google/callback');
@@ -88,17 +95,20 @@ app.get('/auth/google/callback',
     },
     (req, res) => {
         console.log('🎉 AUTH SUCCESS');
-        // Redirect to Frontend Dashboard
-        const frontendUrl = process.env.FRONTEND_URL || 'https://easybills-amber.vercel.app';
-        req.session.save(() => res.redirect(`${frontendUrl}/dashboard`));
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        
+        req.session.save((err) => {
+            if (err) console.error('Session Save Error:', err);
+            res.redirect(`${frontendUrl}/dashboard`);
+        });
     }
 );
 
 // 3. Logout
 app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
-        if (err) return next(err);
-        req.session.destroy(() => {
+        if (err) { return next(err); }
+        req.session.destroy((err) => {
             res.clearCookie('connect.sid');
             res.status(200).json({ success: true, message: 'Logged out' });
         });
@@ -110,7 +120,15 @@ app.get('/auth/logout', (req, res, next) => {
 app.use('/api', require('./routes/claims'));
 app.use('/api/user', require('./routes/user'));
 
-app.get('/', (req, res) => res.send('Backend Running'));
+app.get('/', (req, res) => {
+    res.status(200).send('EasyBills Backend is Running!');
+});
+
+// 404 Catcher (Debug)
+app.use('*', (req, res) => {
+    console.log(`❌ 404 MISS: ${req.method} ${req.originalUrl}`);
+    res.status(404).send(`Cannot GET ${req.originalUrl}`);
+});
 
 connectDB().then(() => {
     const http = require('http');
@@ -118,4 +136,6 @@ connectDB().then(() => {
     server.listen(PORT, () => {
         console.log(`EasyBills server running on port ${PORT}`);
     });
-}).catch((err) => console.error(err));
+}).catch((err) => {
+    console.error('Failed to connect to database:', err);
+});
