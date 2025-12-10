@@ -17,16 +17,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ==================================================================
-// 🔐 SECURITY & CONNECTION SETTINGS (The Fix)
+// 🔐 SECURITY & CONNECTION SETTINGS
 // ==================================================================
 
-// 1. Trust Proxy (Crucial for Render to allow secure cookies)
+// 1. Trust Proxy
 app.set('trust proxy', 1);
 
-// 2. CORS: Explicitly allow your Vercel App
+// 2. CORS
 const corsOptions = {
-    origin: 'https://easybills-amber.vercel.app', // 👈 Hardcoded Vercel URL
-    credentials: true, // Allow cookies to be sent
+    origin: 'https://easybills-amber.vercel.app', 
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
@@ -37,7 +37,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 4. Session Setup: Force "Cross-Site" Cookies
+// 4. Session Setup
 const sessionStore = new SequelizeStore({
     db: sequelize,
     tableName: 'Sessions',
@@ -51,10 +51,10 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: true,        // 👈 REQUIRED: Cookie only travels over HTTPS
-        httpOnly: true,      // Prevents JavaScript access (Security)
+        secure: true,        
+        httpOnly: true,      
         maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'none'     // 👈 REQUIRED: Allows cookie to cross from Vercel to Render
+        sameSite: 'none'     
     }
 }));
 
@@ -64,14 +64,12 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ==================================================================
-// 👇 AUTH ROUTES 👇
+// 👇 AUTH ROUTES
 // ==================================================================
 
-// 1. Start Login
 app.get('/auth/google', (req, res, next) => {
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
     console.log('🚀 LOGIN START. Callback:', callbackURL);
-    
     passport.authenticate('google', {
         scope: ['profile', 'email'],
         prompt: 'select_account',
@@ -79,12 +77,9 @@ app.get('/auth/google', (req, res, next) => {
     })(req, res, next);
 });
 
-// 2. Callback Route
 app.get('/auth/google/callback', 
     (req, res, next) => {
-        console.log('✅ CALLBACK HIT at /auth/google/callback');
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
-        
         passport.authenticate('google', { 
             failureRedirect: '/',
             callbackURL: callbackURL 
@@ -92,9 +87,7 @@ app.get('/auth/google/callback',
     },
     (req, res) => {
         console.log('🎉 AUTH SUCCESS');
-        // 👇 Hardcoded Frontend Redirect to ensure it goes to the right place
         const frontendUrl = 'https://easybills-amber.vercel.app'; 
-        
         req.session.save((err) => {
             if (err) console.error('Session Save Error:', err);
             res.redirect(`${frontendUrl}/dashboard`);
@@ -102,7 +95,6 @@ app.get('/auth/google/callback',
     }
 );
 
-// 3. Logout
 app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
@@ -114,6 +106,33 @@ app.get('/auth/logout', (req, res, next) => {
 });
 
 // ==================================================================
+// 🛠️ TEMPORARY ADMIN SETUP ROUTE (Add this part!)
+// ==================================================================
+app.get('/setup-admin', async (req, res) => {
+    // 👇 Ensure this email matches exactly what you use to log in
+    const targetEmail = '202317b2304@wilp.bits-pilani.ac.in'; 
+
+    try {
+        let user = await User.findOne({ where: { email: targetEmail } });
+
+        if (user) {
+            user.role = 'Accounts'; // Force the role update
+            await user.save();
+            return res.send(`
+                <div style="font-family: sans-serif; padding: 2rem;">
+                    <h1 style="color: green;">✅ Success!</h1>
+                    <p>User <b>${targetEmail}</b> role updated to: <b>${user.role}</b></p>
+                    <p>Please logout and log back in to see the Accounts Dashboard.</p>
+                </div>
+            `);
+        } else {
+            return res.send(`<h1>❌ User Not Found</h1><p>Please log in to the app at least once first, so your account is created in the database.</p>`);
+        }
+    } catch (error) {
+        return res.status(500).send(`<h1>❌ Error</h1><p>${error.message}</p>`);
+    }
+});
+// ==================================================================
 
 app.use('/api', require('./routes/claims'));
 app.use('/api/user', require('./routes/user'));
@@ -122,9 +141,7 @@ app.get('/', (req, res) => {
     res.status(200).send('EasyBills Backend is Running!');
 });
 
-// 404 Catcher
 app.use('*', (req, res) => {
-    console.log(`❌ 404 MISS: ${req.method} ${req.originalUrl}`);
     res.status(404).send(`Cannot GET ${req.originalUrl}`);
 });
 
