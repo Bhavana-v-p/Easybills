@@ -24,7 +24,8 @@ app.use((req, res, next) => {
 
 // 3. CORS
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    // 👇 Replace process.env with the actual string to force it to work
+    origin: 'https://easybills-amber.vercel.app', 
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
