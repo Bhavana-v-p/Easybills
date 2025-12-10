@@ -39,7 +39,7 @@ const fetchClaims = async () => {
 const stats = computed(() => {
   const currentYear = selectedYear.value;
   
-  // Filter claims by selected year
+  // Filter claims by selected year for the financial calc
   const claimsThisYear = claims.value.filter(c => {
     const d = new Date(c.dateIncurred || c.createdAt);
     return d.getFullYear() === parseInt(currentYear.toString());
@@ -47,7 +47,7 @@ const stats = computed(() => {
 
   return {
     pendingApproval: claims.value.filter(c => c.status === 'submitted').length,
-    referredBack: claims.value.filter(c => c.status === 'more_info').length,
+    referredBack: claims.value.filter(c => c.status === 'more_info').length, // Was "Pending Info"
     pendingPayment: claims.value.filter(c => c.status === 'approved').length,
     rejected: claims.value.filter(c => c.status === 'rejected').length, 
     disbursedCount: claims.value.filter(c => c.status === 'paid').length,
