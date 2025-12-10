@@ -106,32 +106,52 @@ app.get('/auth/logout', (req, res, next) => {
 });
 
 // ==================================================================
-// 🛠️ TEMPORARY ADMIN SETUP ROUTE (Add this part!)
+// 🛠️ ADMIN SETUP & DB FIX ROUTE
+// Visit: https://easybills.onrender.com/setup-admin
 // ==================================================================
 app.get('/setup-admin', async (req, res) => {
-    // 👇 Ensure this email matches exactly what you use to log in
     const targetEmail = '202317b2304@wilp.bits-pilani.ac.in'; 
 
     try {
+        // 1. 🛠️ FIX THE DATABASE ENUM FIRST
+        // This tells Postgres: "Hey, allow 'Accounts' as a valid role option"
+        try {
+            await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS 'Accounts';`);
+            console.log("✅ Enum updated successfully.");
+        } catch (enumError) {
+            // Ignore error if it already exists or if using a different DB setup
+            console.log("Enum update skipped or failed (might already exist):", enumError.message);
+        }
+
+        // 2. 👤 UPDATE THE USER
         let user = await User.findOne({ where: { email: targetEmail } });
 
         if (user) {
-            user.role = 'Accounts'; // Force the role update
-            await user.save();
+            // Force update using raw query to bypass Sequelize model validation quirks
+            await sequelize.query(
+                `UPDATE "Users" SET role = 'Accounts' WHERE email = :email`,
+                { replacements: { email: targetEmail } }
+            );
+            
             return res.send(`
                 <div style="font-family: sans-serif; padding: 2rem;">
                     <h1 style="color: green;">✅ Success!</h1>
-                    <p>User <b>${targetEmail}</b> role updated to: <b>${user.role}</b></p>
-                    <p>Please logout and log back in to see the Accounts Dashboard.</p>
+                    <p>Database Enum updated.</p>
+                    <p>User <b>${targetEmail}</b> is now an Admin (Accounts).</p>
+                    <p>Please logout and log back in.</p>
                 </div>
             `);
         } else {
-            return res.send(`<h1>❌ User Not Found</h1><p>Please log in to the app at least once first, so your account is created in the database.</p>`);
+            return res.send(`<h1>❌ User Not Found</h1><p>Please log in first to create your account.</p>`);
         }
     } catch (error) {
         return res.status(500).send(`<h1>❌ Error</h1><p>${error.message}</p>`);
     }
 });
+// ==================================================================
+
+// ==================================================================
+// 👇 API ROUTES
 // ==================================================================
 
 app.use('/api', require('./routes/claims'));
