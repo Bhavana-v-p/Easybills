@@ -15,7 +15,7 @@ const filters = ref({
   category: 'all',
   startDate: '',
   endDate: '',
-  sortBy: 'recent' // 'recent' or 'oldest'
+  sortBy: 'recent' 
 });
 
 // Navigation helper
@@ -71,7 +71,8 @@ const filteredClaims = computed(() => {
 
   // 2. Filter by Category
   if (filters.value.category !== 'all') {
-    result = result.filter(c => c.category === filters.value.category);
+    // Normalizes case (e.g., matches "Travel" with "travel")
+    result = result.filter(c => c.category?.toLowerCase() === filters.value.category.toLowerCase());
   }
 
   // 3. Filter by Date Range
@@ -81,7 +82,6 @@ const filteredClaims = computed(() => {
   }
   if (filters.value.endDate) {
     const end = new Date(filters.value.endDate);
-    // Set end date to end of day to include the full day
     end.setHours(23, 59, 59, 999); 
     result = result.filter(c => new Date(c.dateIncurred || c.date) <= end);
   }
@@ -96,16 +96,18 @@ const filteredClaims = computed(() => {
   return result;
 });
 
-// Helper: Get unique categories for dropdown
-const uniqueCategories = computed(() => {
-  const cats = claims.value.map(c => c.category).filter(Boolean);
-  return [...new Set(cats)];
-});
+// SPECIFIC CATEGORIES LIST
+const categoryOptions = [
+  "Travel", 
+  "Stationery", 
+  "Academic Events", 
+  "Registration Fee", 
+  "Others"
+];
 
 // Quick Filter from Stats Cards
 const applyQuickFilter = (status: string) => {
   filters.value.status = status;
-  // Reset other filters for clarity when clicking a card
   filters.value.category = 'all';
   filters.value.startDate = '';
   filters.value.endDate = '';
@@ -254,7 +256,7 @@ onMounted(() => {
               <label>Category:</label>
               <select v-model="filters.category">
                 <option value="all">All Categories</option>
-                <option v-for="cat in uniqueCategories" :key="cat" :value="cat">{{ cat }}</option>
+                <option v-for="cat in categoryOptions" :key="cat" :value="cat">{{ cat }}</option>
               </select>
             </div>
 
@@ -336,13 +338,13 @@ onMounted(() => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* LAYOUT RESET */
+/* LAYOUT RESET - Fixes Overflow/Scrollbars */
 .page-container {
   display: flex; height: 100vh; width: 100%;
   font-family: 'Inter', sans-serif; background: #f5f6fa; overflow: hidden;
 }
 
-/* SIDEBAR */
+/* SIDEBAR - Fixed Width */
 .admin-sidebar {
   width: 260px; min-width: 260px;
   background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
@@ -356,8 +358,13 @@ onMounted(() => {
 .menu-footer { margin-top: auto; }
 .back-link { color: #93c5fd; font-size: 0.85rem; }
 
-/* CONTENT */
-.main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+/* MAIN CONTENT - Scrollable Only Here */
+.main-content { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  overflow-y: auto; /* IMPORTANT: Enables internal scroll */
+}
 .content-wrapper { padding: 2rem; width: 100%; max-width: 1400px; margin: 0 auto; }
 
 /* STATS GRID */
