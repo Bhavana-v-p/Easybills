@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router';
 // Import the new modal
 
 import LogoutModal from '../components/LogoutModal.vue';
+import TopNavBar from '../components/TopNavBar.vue';
  
 const router = useRouter();
 
