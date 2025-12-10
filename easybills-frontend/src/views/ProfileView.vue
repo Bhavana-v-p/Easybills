@@ -89,11 +89,6 @@ const handleLogout = async () => {
               <div class="info-box">{{ user.email }}</div>
             </div>
 
-            <div class="detail-group">
-              <label>Google ID</label>
-              <div class="info-box code-font">{{ user.googleId }}</div>
-            </div>
-
              <div class="detail-group">
               <label>Account Status</label>
               <div class="info-box status-active">Active</div>
