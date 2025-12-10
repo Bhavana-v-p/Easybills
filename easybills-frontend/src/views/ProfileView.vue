@@ -2,19 +2,19 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+// Ensure these components exist in your src/components folder
 import TopNavBar from '../components/TopNavBar.vue';
+import LogoutModal from '../components/LogoutModal.vue';
 
 const router = useRouter();
 const user = ref<any>(null);
 const loading = ref(true);
-const uploading = ref(false); // To show spinner during upload
+const uploading = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null);
+const showLogoutModal = ref(false);
 
-// Fetch User Data
-onMounted(async () => {
-  await loadUserProfile();
-});
-
-const loadUserProfile = async () => {
+// 1. Fetch User Data
+const fetchUserProfile = async () => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const response = await axios.get(`${apiUrl}/api/user/me`, { withCredentials: true });
@@ -29,34 +29,11 @@ const loadUserProfile = async () => {
   }
 };
 
-// Helper: Get Initials
-const userInitials = computed(() => {
-  if (!user.value || !user.value.name) return 'U';
-  const names = user.value.name.split(' ');
-  if (names.length >= 2) {
-    return (names[0][0] + names[1][0]).toUpperCase();
-  }
-  return names[0][0].toUpperCase();
+onMounted(() => {
+  fetchUserProfile();
 });
 
-// Navigation
-const navigate = (path: string) => router.push(path);
-
-// Logout
-const handleLogout = async () => {
-  try {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    await axios.get(`${apiUrl}/auth/logout`, { withCredentials: true });
-    window.location.href = '/'; 
-  } catch (error) {
-    console.error('Logout failed', error);
-    window.location.href = '/';
-  }
-};
-
-// 📸 PROFILE PICTURE UPLOAD LOGIC
-const fileInput = ref<HTMLInputElement | null>(null);
-
+// 2. Profile Picture Upload Logic
 const triggerFileInput = () => {
   fileInput.value?.click();
 };
@@ -76,7 +53,7 @@ const uploadProfilePicture = async (file: File) => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     const formData = new FormData();
-    formData.append('picture', file);
+    formData.append('picture', file); // Ensure backend expects 'picture' field
 
     const res = await axios.post(`${apiUrl}/api/user/picture`, formData, {
       withCredentials: true,
@@ -84,14 +61,39 @@ const uploadProfilePicture = async (file: File) => {
     });
 
     if (res.data.success) {
-      // Refresh profile to show new image
-      await loadUserProfile();
+      // Refresh profile to show new image immediately
+      await fetchUserProfile();
+      alert("Profile picture updated successfully!"); 
     }
   } catch (error) {
     console.error('Upload failed:', error);
-    alert('Failed to upload profile picture.');
+    alert('Failed to upload profile picture. Please try again.');
   } finally {
     uploading.value = false;
+  }
+};
+
+// 3. Helper: Get Initials (fallback if no picture)
+const userInitials = computed(() => {
+  if (!user.value || !user.value.name) return 'U';
+  const names = user.value.name.split(' ');
+  if (names.length >= 2) {
+    return (names[0][0] + names[1][0]).toUpperCase();
+  }
+  return names[0][0].toUpperCase();
+});
+
+// 4. Navigation & Logout
+const navigate = (path: string) => router.push(path);
+
+const handleLogoutConfirm = async () => {
+  try {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    await axios.get(`${apiUrl}/auth/logout`, { withCredentials: true });
+    window.location.href = '/'; 
+  } catch (error) {
+    console.error('Logout failed', error);
+    window.location.href = '/';
   }
 };
 </script>
@@ -105,11 +107,10 @@ const uploadProfilePicture = async (file: File) => {
       <div class="menu-item" @click="navigate('/my-claims')">My Claims</div>
       <div class="menu-item" @click="navigate('/upload-bill')">Upload Bill</div>
       <div class="menu-item active" @click="navigate('/profile')">Profile</div>
-      <div class="menu-item" @click="navigate('/settings')">Settings</div> 
-    </div>
+      </div>
 
     <div class="main-content">
-      <TopNavBar pageTitle="My Profile" />
+      <TopNavBar pageTitle="My Profile" @logout-request="showLogoutModal = true" />
       
       <div class="content-wrapper">
         
@@ -158,13 +159,20 @@ const uploadProfilePicture = async (file: File) => {
             </div>
           </div>
 
-          <button class="logout-btn-large" @click="handleLogout">
+          <button class="logout-btn-large" @click="showLogoutModal = true">
             Logout
           </button>
 
         </div>
       </div>
     </div>
+
+    <LogoutModal 
+      v-if="showLogoutModal" 
+      @close="showLogoutModal = false" 
+      @confirm="handleLogoutConfirm" 
+    />
+
   </div>
 </template>
 
@@ -232,7 +240,7 @@ const uploadProfilePicture = async (file: File) => {
   width: 120px;
   height: 120px;
   margin: 0 auto 1rem;
-  cursor: pointer; /* Makes it clickable */
+  cursor: pointer;
 }
 
 .avatar-circle {
