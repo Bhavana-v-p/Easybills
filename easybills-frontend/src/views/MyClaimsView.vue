@@ -18,6 +18,7 @@ const navigate = (path: string) => {
 };
 
 const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
   return new Date(dateString).toLocaleDateString();
 };
 
@@ -27,17 +28,13 @@ const handleLogoutConfirm = async () => {
    try {
        await axios.get(`${apiUrl}/auth/logout`, { withCredentials: true });
    } catch (e) { console.error(e); }
-   window.location.href = '/'; // Redirect to home/login
+   window.location.href = '/'; 
 };
 
 // Fetch claims on load
 onMounted(async () => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    // Assuming backend route is /api/claims/my-claims based on previous context, 
-    // but keeping your provided path if that's what your backend expects:
-    // If your backend expects /api/faculty/claims, keep it. 
-    // If it expects /api/claims/my-claims, switch it here.
     const response = await axios.get(`${apiUrl}/api/claims/my-claims`, {
       withCredentials: true 
     });
@@ -73,38 +70,40 @@ onMounted(async () => {
           <h1>My Claims History</h1>
         </div>
 
-        <div class="table-container">
+        <div class="table-card">
           <div v-if="loading" class="loading">Loading your claims...</div>
           
-          <table v-else>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="claim in claims" :key="claim.id">
-                <td>#{{ claim.id }}</td>
-                <td>{{ formatDate(claim.dateIncurred || claim.date) }}</td>
-                <td>{{ claim.category }}</td>
-                <td>{{ claim.description }}</td>
-                <td class="amount">₹{{ claim.amount }}</td>
-                <td>
-                  <span :class="['status', claim.status.toLowerCase().replace(' ', '-')]">
-                    {{ claim.status }}
-                  </span>
-                </td>
-              </tr>
-              <tr v-if="claims.length === 0">
-                <td colspan="6" style="text-align: center;">No claims found.</td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-else class="table-responsive">
+            <table class="claims-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="claim in claims" :key="claim.id">
+                  <td>#{{ claim.id }}</td>
+                  <td>{{ formatDate(claim.dateIncurred || claim.date) }}</td>
+                  <td>{{ claim.category }}</td>
+                  <td class="desc-cell">{{ claim.description }}</td>
+                  <td class="amount">₹{{ claim.amount }}</td>
+                  <td>
+                    <span :class="['status', claim.status ? claim.status.toLowerCase().replace(' ', '-') : 'pending']">
+                      {{ claim.status }}
+                    </span>
+                  </td>
+                </tr>
+                <tr v-if="claims.length === 0">
+                  <td colspan="6" style="text-align: center; padding: 2rem;">No claims found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -120,19 +119,24 @@ onMounted(async () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* GLOBAL RESET FOR BOX SIZING */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 .page-container {
-  display: flex; /* Sidebar and Main sit side-by-side */
+  display: flex;
   height: 100vh;
-  width: 100vw;
+  width: 100%; /* Changed from 100vw to avoid horizontal scroll on body */
   font-family: 'Inter', sans-serif;
   background: #f5f6fa;
-  overflow: hidden; /* Prevents double scrollbars */
+  overflow: hidden; 
 }
 
 /* SIDEBAR */
 .sidebar {
   width: 260px;
-  min-width: 260px;
+  min-width: 260px; /* Ensures it doesn't shrink */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 2rem 1.5rem;
@@ -158,48 +162,78 @@ onMounted(async () => {
 .menu-item:hover { background: rgba(255, 255, 255, 0.2); }
 .menu-item.active { background: rgba(255, 255, 255, 0.3); font-weight: 600; }
 
-/* MAIN CONTENT - The Fix */
+/* MAIN CONTENT */
 .main-content {
-  flex: 1; /* Forces it to take ALL remaining width */
+  flex: 1; /* Takes remaining space */
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* Scroll ONLY the content, not the sidebar */
+  overflow-y: auto; /* Vertically scrollable */
+  overflow-x: hidden; /* Prevent main area from scrolling horizontally */
 }
 
 .content-wrapper {
   padding: 2rem;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-.topbar { margin-bottom: 2rem; }
-.topbar h1 { font-size: 1.8rem; color: #333; font-weight: 700; }
+.topbar { margin-bottom: 1.5rem; }
+.topbar h1 { font-size: 1.8rem; color: #111827; font-weight: 700; }
 
-/* TABLE STYLES */
-.table-container {
+/* TABLE CARD */
+.table-card {
   background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
   padding: 1.5rem;
-  border-radius: 1rem;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-  overflow-x: auto;
+  width: 100%; /* Ensure it fits within parent */
 }
 
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 0.9rem; text-align: left; border-bottom: 1px solid #eee; }
-th { background: #f0f1f5; font-weight: 600; }
+/* RESPONSIVE TABLE WRAPPER */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto; /* This creates a scrollbar ONLY for the table if needed */
+}
 
-.amount { font-weight: bold; color: #667eea; }
+.claims-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px; /* Ensures table doesn't get too squished on mobile */
+}
 
-/* Status Badges */
+th, td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap; /* Prevents text from breaking lines */
+}
+
+/* Allow description to wrap if needed, or truncate */
+.desc-cell {
+  white-space: normal;
+  max-width: 300px;
+}
+
+th { 
+  background: #f9fafb; 
+  font-weight: 600; 
+  color: #6b7280; 
+  font-size: 0.9rem;
+}
+
+.amount { font-weight: bold; color: #111827; }
+
+/* STATUS BADGES */
 .status { padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; text-transform: capitalize; }
 .submitted { background: #e2e6ea; color: #495057; }
-.approved { background: #d4edda; color: #155724; }
-.pending { background: #fff3cd; color: #d39e00; }
-.rejected { background: #f8d7da; color: #721c24; }
+.approved { background: #dcfce7; color: #166534; }
+.pending { background: #fef3c7; color: #92400e; }
+.rejected { background: #fee2e2; color: #991b1b; }
 .paid { background: #d1e7dd; color: #0f5132; }
+.draft { background: #f3f4f6; color: #4b5563; }
 
+/* Hide Sidebar on Mobile */
 @media(max-width: 768px) {
   .sidebar { display: none; }
+  .content-wrapper { padding: 1rem; }
 }
 </style>
