@@ -30,6 +30,8 @@ onMounted(async () => {
     if (userRes.data.success) user.value = userRes.data.data;
 
     // 2. Get All Claims
+    // Note: Adjusted endpoint to match MyClaims view pattern if needed. 
+    // If your backend uses /api/faculty/claims for dashboard, keep as is.
     const claimsRes = await axios.get(`${apiUrl}/api/faculty/claims`, { withCredentials: true });
     if (claimsRes.data.success) {
       claims.value = claimsRes.data.data;
@@ -83,14 +85,15 @@ const handleLogoutConfirm = async () => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
     await axios.get(`${apiUrl}/auth/logout`, { withCredentials: true });
-    window.location.href = 'http://localhost:3000/landing.html';
+    window.location.href = '/';
   } catch (error) {
     console.error('Logout failed', error);
-    window.location.href = 'http://localhost:3000/landing.html';
+    window.location.href = '/';
   }
 };
 
 const formatDate = (dateString: string) => {
+  if (!dateString) return 'N/A';
   const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: '2-digit' };
   return new Date(dateString).toLocaleDateString('en-GB', options).replace(/ /g, " ").replace("20", "'");
 };
@@ -131,8 +134,6 @@ const getStatusColorClass = (status: string) => {
                 Welcome back, {{ user.name || user.email }}
             </p>
           </div>
-
-
           
           <div class="status-legend">
             <span class="legend-item"><span class="dot green"></span> Disbursed</span>
@@ -140,8 +141,6 @@ const getStatusColorClass = (status: string) => {
             <span class="legend-item"><span class="dot red"></span> Rejected</span>
             <span class="legend-item"><span class="dot orange"></span> Pending</span>
           </div>
-          
-          <button class="logout-btn" @click="showLogoutModal = true">Logout</button>
         </div>
 
         <div class="controls-bar">
@@ -178,28 +177,28 @@ const getStatusColorClass = (status: string) => {
             <div class="claim-details">
               <div class="detail-col id-col">
                 <span class="label">Claim Number :</span>
-                <a href="#" class="claim-link">{{ claim.id }}</a>
+                <span class="value-highlight">#{{ claim.id }}</span>
               </div>
 
               <div class="detail-col info-col">
                 <div class="row">
-                  <span class="label">Expense Category :</span>
+                  <span class="label">Category :</span>
                   <span class="value">{{ claim.category }}</span>
                 </div>
                 <div class="row">
-                  <span class="label">Submitted On :</span>
-                  <span class="value">{{ formatDate(claim.dateIncurred) }}</span>
+                  <span class="label">Date :</span>
+                  <span class="value">{{ formatDate(claim.dateIncurred || claim.date) }}</span>
                 </div>
               </div>
 
               <div class="detail-col amount-col">
                 <div class="row">
-                  <span class="label">Claimed Amount :</span>
-                  <span class="value">INR {{ claim.amount }}</span>
+                  <span class="label">Amount :</span>
+                  <span class="value">₹ {{ claim.amount }}</span>
                 </div>
                 <div class="row">
-                  <span class="label">Approved Amount :</span>
-                  <span class="value">0.00</span>
+                  <span class="label">Approved :</span>
+                  <span class="value">₹ 0.00</span>
                 </div>
               </div>
 
@@ -241,21 +240,25 @@ const getStatusColorClass = (status: string) => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-/* Full Page Container - Forces Side-by-Side */
-/* Main Layout Container */
+/* GLOBAL RESET */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Full Page Container */
 .dashboard-container {
   font-family: 'Inter', sans-serif;
   background: #f0f2f5;
   display: flex;
   height: 100vh;
-  width: 100vw;
-  overflow: hidden; /* Prevents double scrollbars */
+  width: 100%; /* Changed from 100vw to avoid horizontal scroll */
+  overflow: hidden; 
 }
 
 /* Fixed Sidebar */
 .sidebar {
   width: 260px;
-  flex-shrink: 0;
+  min-width: 260px; /* Prevent shrinking */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 2rem 1.5rem;
@@ -270,27 +273,26 @@ const getStatusColorClass = (status: string) => {
 
 /* Main Area */
 .main {
-  flex-grow: 1; /* Grow to fill all remaining space */
+  flex: 1; /* Takes all remaining width */
   display: flex;
   flex-direction: column;
-  width: 100%; /* Ensure it takes full available width */
-  box-sizing: border-box;
+  min-width: 0; /* Prevents flex items from overflowing horizontally */
 }
 
-/* Scrollable Part */
+/* Scrollable Content Area */
 .content-area {
-  flex-grow: 1;
+  flex: 1;
   padding: 2rem;
-  overflow-y: auto; /* Only this part scrolls */
-  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-/* Topbar */
-.topbar { display: flex; justify-content: space-between; margin-bottom: 1.5rem; align-items: flex-start; }
+/* Header Sections */
+.topbar { display: flex; justify-content: space-between; margin-bottom: 1.5rem; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
 .welcome-box h1 { font-size: 1.8rem; color: #333; margin-bottom: 5px; }
 .user-sub { color: #666; font-size: 0.9rem; }
 
-/* Controls Bar (Search & Sort) */
+/* Controls Bar */
 .controls-bar {
   display: flex;
   justify-content: space-between;
@@ -300,9 +302,11 @@ const getStatusColorClass = (status: string) => {
   border-radius: 8px;
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+  gap: 1rem;
 }
 
-.search-box { position: relative; width: 300px; }
+.search-box { position: relative; width: 300px; max-width: 100%; }
 .search-input {
   width: 100%;
   padding: 0.6rem 1rem;
@@ -317,22 +321,23 @@ const getStatusColorClass = (status: string) => {
 .sort-select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; color: #333; cursor: pointer; }
 
 /* Legend */
-.status-legend { display: flex; gap: 15px; font-size: 0.85rem; color: #555; margin-left: 2rem; margin-top: 10px; }
+.status-legend { display: flex; gap: 15px; font-size: 0.85rem; color: #555; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .green { background: #2ecc71; } .purple { background: #9b59b6; } .red { background: #e74c3c; } .orange { background: #f39c12; }
-
-.logout-btn { padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; }
 
 /* Claims List */
 .claims-list-container { display: flex; flex-direction: column; gap: 15px; width: 100%; }
 
 .claim-card {
-  background: white; border-radius: 4px; padding: 0; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  display: flex; position: relative; overflow: hidden; min-height: 80px;
-  width: 100%; /* Ensure card takes full width */
+  background: white; border-radius: 8px; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  display: flex; position: relative; overflow: hidden;
+  width: 100%;
+  transition: transform 0.2s ease;
 }
+
+.claim-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 
 .corner-indicator {
   position: absolute; top: 0; right: 0; width: 0; height: 0;
@@ -344,31 +349,37 @@ const getStatusColorClass = (status: string) => {
 .corner-indicator.status-rejected { border-right-color: #e74c3c; }
 
 .claim-details {
-  display: grid; grid-template-columns: 1.5fr 2fr 2fr 2fr;
-  width: 100%; padding: 1.2rem; align-items: center;
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive Grid */
+  width: 100%; 
+  padding: 1.5rem; 
+  align-items: center;
+  gap: 1.5rem;
 }
 
-.detail-col { display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; color: #333; }
-.row { display: flex; gap: 5px; }
-.label { color: #777; } .value { color: #333; font-weight: 500; }
-.claim-link { color: #667eea; text-decoration: underline; cursor: pointer; }
+.detail-col { display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; color: #333; }
+.row { display: flex; gap: 8px; align-items: center; }
+.label { color: #888; font-size: 0.85rem; } 
+.value { color: #333; font-weight: 500; }
+.value-highlight { color: #667eea; font-weight: 700; cursor: pointer; }
 
-.status-text { font-weight: 600; }
+.status-text { font-weight: 600; text-transform: capitalize; }
 .status-text.status-approved { color: #2ecc71; }
 .status-text.status-pending { color: #f39c12; }
 .status-text.status-rejected { color: #e74c3c; }
 
 /* Pagination */
 .pagination-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid #ddd; }
-.page-actions button { padding: 5px 15px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; margin-left: 10px; }
-.page-actions button:disabled { background: #eee; cursor: not-allowed; }
+.page-actions button { padding: 6px 16px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; margin-left: 10px; transition: all 0.2s; }
+.page-actions button:hover:not(:disabled) { background: #f9fafb; border-color: #ccc; }
+.page-actions button:disabled { background: #f3f4f6; color: #aaa; cursor: not-allowed; }
 
+/* Mobile Responsiveness */
 @media(max-width: 768px) {
   .sidebar { display: none; }
-  .claim-details { grid-template-columns: 1fr; gap: 15px; }
-  .controls-bar { flex-direction: column; gap: 1rem; align-items: stretch; }
+  .claim-details { grid-template-columns: 1fr; gap: 1rem; }
+  .content-area { padding: 1rem; }
+  .controls-bar { flex-direction: column; align-items: stretch; }
   .search-box { width: 100%; }
-  .main { width: 100vw; }
 }
-
 </style>
