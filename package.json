@@ -36,8 +36,4 @@
   "devDependencies": {
     "nodemon": "^3.0.2"
   }
-  {
-  "buildCommand": "vite build",
-  "framework": "vite"
-  }
 }
