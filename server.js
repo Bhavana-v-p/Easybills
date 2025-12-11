@@ -53,7 +53,7 @@ app.use(session({
     cookie: {
         secure: true,        
         httpOnly: true,      
-        maxAge: 24 * 60 * 60 * 1000,
+        // maxAge: 24 * 60 * 60 * 1000, // ❌ REMOVED: Cookie now expires when browser closes
         sameSite: 'none'     
     }
 }));
@@ -70,9 +70,10 @@ app.use(passport.session());
 app.get('/auth/google', (req, res, next) => {
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
     console.log('🚀 LOGIN START. Callback:', callbackURL);
+    
     passport.authenticate('google', {
         scope: ['profile', 'email'],
-        prompt: 'select_account',
+        prompt: 'select_account', // 👈 FORCES Google to show account picker every time
         callbackURL: callbackURL
     })(req, res, next);
 });
@@ -95,11 +96,21 @@ app.get('/auth/google/callback',
     }
 );
 
+// Improved Logout Route
 app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
+        
         req.session.destroy((err) => {
-            res.clearCookie('connect.sid');
+            if (err) console.log("Session destroy error:", err);
+            
+            // 🧹 FORCE CLEAR COOKIE
+            res.clearCookie('connect.sid', {
+                path: '/',
+                secure: true, 
+                sameSite: 'none'
+            });
+            
             res.status(200).json({ success: true, message: 'Logged out' });
         });
     });
@@ -107,19 +118,16 @@ app.get('/auth/logout', (req, res, next) => {
 
 // ==================================================================
 // 🛠️ ADMIN SETUP & DB FIX ROUTE
-// Visit: https://easybills.onrender.com/setup-admin
 // ==================================================================
 app.get('/setup-admin', async (req, res) => {
     const targetEmail = '202317b2304@wilp.bits-pilani.ac.in'; 
 
     try {
         // 1. 🛠️ FIX THE DATABASE ENUM FIRST
-        // This tells Postgres: "Hey, allow 'Accounts' as a valid role option"
         try {
             await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS 'Accounts';`);
             console.log("✅ Enum updated successfully.");
         } catch (enumError) {
-            // Ignore error if it already exists or if using a different DB setup
             console.log("Enum update skipped or failed (might already exist):", enumError.message);
         }
 
@@ -127,7 +135,6 @@ app.get('/setup-admin', async (req, res) => {
         let user = await User.findOne({ where: { email: targetEmail } });
 
         if (user) {
-            // Force update using raw query to bypass Sequelize model validation quirks
             await sequelize.query(
                 `UPDATE "Users" SET role = 'Accounts' WHERE email = :email`,
                 { replacements: { email: targetEmail } }
@@ -148,7 +155,6 @@ app.get('/setup-admin', async (req, res) => {
         return res.status(500).send(`<h1>❌ Error</h1><p>${error.message}</p>`);
     }
 });
-// ==================================================================
 
 // ==================================================================
 // 👇 API ROUTES
