@@ -11,7 +11,11 @@ const loading = ref(true);
 const uploading = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const showLogoutModal = ref(false);
-const debugError = ref(''); // Store errors for display
+const debugError = ref('');
+
+// --- NEW VARIABLES FOR NAME EDITING ---
+const isEditingName = ref(false);
+const editedName = ref('');
 
 // 1. Fetch User Data
 const fetchUserProfile = async () => {
@@ -20,13 +24,9 @@ const fetchUserProfile = async () => {
   
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    console.log("Fetching profile from:", `${apiUrl}/api/user/me`);
-    
     const response = await axios.get(`${apiUrl}/api/user/me`, { withCredentials: true });
-    console.log("Profile API Response:", response.data);
 
     if (response.data && response.data.success) {
-      // Assign data correctly based on your API structure
       user.value = response.data.data; 
     } else {
       debugError.value = 'API returned success: false';
@@ -34,9 +34,6 @@ const fetchUserProfile = async () => {
   } catch (error: any) {
     console.error('Failed to load profile:', error);
     debugError.value = error.message || 'Network Error';
-    if(error.response) {
-       debugError.value += ` (${error.response.status} ${error.response.statusText})`;
-    }
   } finally {
     loading.value = false;
   }
@@ -85,17 +82,63 @@ const uploadProfilePicture = async (file: File) => {
   }
 };
 
-// 3. Helper: Initials
+// 3. Helper: Initials (Robust Version)
 const userInitials = computed(() => {
-  if (!user.value || !user.value.name) return 'U';
-  const names = user.value.name.split(' ');
-  if (names.length >= 2) {
-    return (names[0][0] + names[1][0]).toUpperCase();
+  if (!user.value) return 'U';
+  
+  // If name exists, split it
+  if (user.value.name) {
+    const names = user.value.name.split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase();
+    }
+    return names[0][0].toUpperCase();
   }
-  return names[0][0].toUpperCase();
+  
+  // Fallback to Email if no name
+  if (user.value.email) {
+    return user.value.email.substring(0, 2).toUpperCase();
+  }
+  
+  return 'U';
 });
 
-// 4. Navigation & Logout
+// --- 4. NAME EDITING FUNCTIONS ---
+const startEditingName = () => {
+  editedName.value = user.value.name || '';
+  isEditingName.value = true;
+};
+
+const cancelEditingName = () => {
+  isEditingName.value = false;
+  editedName.value = '';
+};
+
+const saveName = async () => {
+  if (!editedName.value.trim()) {
+    alert("Name cannot be empty.");
+    return;
+  }
+
+  try {
+    const apiUrl = import.meta.env.VITE_API_BASE_URL;
+    // Sending PUT request to update name
+    await axios.put(`${apiUrl}/api/user/me`, 
+      { name: editedName.value }, 
+      { withCredentials: true }
+    );
+    
+    // Update local state immediately without reload
+    user.value.name = editedName.value;
+    isEditingName.value = false;
+    alert("Name updated successfully!");
+  } catch (error) {
+    console.error('Failed to update name:', error);
+    alert('Failed to update name. Please try again.');
+  }
+};
+
+// 5. Navigation & Logout
 const navigate = (path: string) => router.push(path);
 
 const handleLogoutConfirm = async () => {
@@ -157,7 +200,21 @@ const handleLogoutConfirm = async () => {
               @change="handleFileChange"
             />
 
-            <h2 class="user-name">{{ user.name || 'No Name' }}</h2>
+            <div class="name-container">
+              <div v-if="!isEditingName" class="name-display">
+                <h2 class="user-name">{{ user.name || 'Set Your Name' }}</h2>
+                <button class="edit-icon-btn" @click="startEditingName" title="Edit Name">✏️</button>
+              </div>
+
+              <div v-else class="name-edit-form">
+                <input type="text" v-model="editedName" class="name-input" placeholder="Enter Full Name" />
+                <div class="edit-buttons">
+                  <button @click="saveName" class="btn-save">Save</button>
+                  <button @click="cancelEditingName" class="btn-cancel">Cancel</button>
+                </div>
+              </div>
+            </div>
+
             <span class="role-badge">{{ user.role || 'User' }}</span>
           </div>
 
@@ -275,6 +332,7 @@ const handleLogoutConfirm = async () => {
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden; border: 4px solid #f3f4f6;
+  color: white; font-weight: 700;
 }
 .profile-img { width: 100%; height: 100%; object-fit: cover; }
 .initials { color: white; font-size: 2.5rem; font-weight: 700; }
@@ -289,7 +347,19 @@ const handleLogoutConfirm = async () => {
 
 .hidden-input { display: none; }
 
+/* NAME EDITING STYLES */
+.name-container { margin-bottom: 0.5rem; min-height: 40px; display: flex; justify-content: center; }
+.name-display { display: flex; align-items: center; gap: 8px; }
 .user-name { font-size: 1.5rem; font-weight: 700; color: #1f2937; margin: 0; }
+.edit-icon-btn { background: none; border: none; cursor: pointer; font-size: 1rem; opacity: 0.5; transition: 0.2s; }
+.edit-icon-btn:hover { opacity: 1; transform: scale(1.1); }
+
+.name-edit-form { display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; }
+.name-input { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem; width: 80%; text-align: center;}
+.edit-buttons { display: flex; gap: 8px; }
+.btn-save { background: #667eea; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+.btn-cancel { background: #f3f4f6; color: #374151; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+
 .role-badge {
   display: inline-block; background: #eef2ff; color: #4f46e5;
   padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; text-transform: uppercase;
