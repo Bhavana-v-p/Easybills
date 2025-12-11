@@ -104,8 +104,8 @@ app.get('/auth/logout', (req, res, next) => {
         req.session.destroy((err) => {
             if (err) console.log("Session destroy error:", err);
             
-            // 🧹 FORCE CLEAR COOKIE
-            res.clearCookie('connect.sid', {
+// 🧹 FORCE CLEAR COOKIE (Update the name here too!)
+            res.clearCookie('easybills.sid', { // 👈 CHANGE 'connect.sid' TO 'easybills.sid'
                 path: '/',
                 secure: true, 
                 sameSite: 'none'
