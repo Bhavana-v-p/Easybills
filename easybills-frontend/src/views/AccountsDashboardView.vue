@@ -10,6 +10,16 @@ const loading = ref(true);
 const filterStatus = ref('submitted'); 
 const selectedYear = ref(new Date().getFullYear());
 
+
+// --- FILTER & SORT STATE ---
+const filters = ref({
+  status: 'all',
+  category: 'all',
+  startDate: '',
+  endDate: '',
+  sortBy: 'recent' 
+});
+
 // MODAL STATE
 const showDetailsModal = ref(false);
 const selectedClaim = ref<any>(null);
@@ -59,19 +69,76 @@ const stats = computed(() => {
   };
 });
 
-// FILTER LOGIC
+// --- FILTERING & SORTING LOGIC ---
 const filteredClaims = computed(() => {
   if (filterStatus.value === 'all') return claims.value;
   return claims.value.filter(c => c.status === filterStatus.value);
+
+  // 1. Filter by Status
+  if (filters.value.status !== 'all') {
+    result = result.filter(c => c.status.toLowerCase() === filters.value.status.toLowerCase());
+  }
+
+  // 2. Filter by Category
+  if (filters.value.category !== 'all') {
+    // Normalizes case (e.g., matches "Travel" with "travel")
+    result = result.filter(c => c.category?.toLowerCase() === filters.value.category.toLowerCase());
+  }
+
+  // 3. Filter by Date Range
+  if (filters.value.startDate) {
+    const start = new Date(filters.value.startDate);
+    result = result.filter(c => new Date(c.dateIncurred || c.date) >= start);
+  }
+  if (filters.value.endDate) {
+    const end = new Date(filters.value.endDate);
+    end.setHours(23, 59, 59, 999); 
+    result = result.filter(c => new Date(c.dateIncurred || c.date) <= end);
+  }
+
+  // 4. Sort (Recent vs Oldest)
+  result.sort((a, b) => {
+    const dateA = new Date(a.dateIncurred || a.date).getTime();
+    const dateB = new Date(b.dateIncurred || b.date).getTime();
+    return filters.value.sortBy === 'recent' ? dateB - dateA : dateA - dateB;
+  });
+
+  return result;
 });
 
+// SPECIFIC CATEGORIES LIST
+const categoryOptions = [
+  "Travel", 
+  "Stationery", 
+  "Academic Events", 
+  "Registration Fee", 
+  "Others"
+];
+
+// Quick Filter from Stats Cards
+const applyQuickFilter = (status: string) => {
+  filters.value.status = status;
+  filters.value.category = 'all';
+  filters.value.startDate = '';
+  filters.value.endDate = '';
+};
+
+const clearFilters = () => {
+  filters.value = {
+    status: 'all',
+    category: 'all',
+    startDate: '',
+    endDate: '',
+    sortBy: 'recent'
+  };
+};
 // OPEN MODAL
 const openClaimDetails = (claim: any) => {
   selectedClaim.value = claim;
   showDetailsModal.value = true;
 };
 
-// UPDATE STATUS ACTION
+    // UPDATE STATUS ACTION
 const processClaim = async (action: string) => {
   if (!selectedClaim.value) return;
   const claimId = selectedClaim.value.id;
@@ -125,52 +192,132 @@ onMounted(() => fetchClaims());
 
 <template>
   <div class="page-container">
+    
     <div class="sidebar admin-sidebar">
       <h2>EasyBills <span class="badge">Admin</span></h2>
       <div class="menu-item active" @click="navigate('/accounts')">Dashboard</div>
       <div class="menu-item" @click="navigate('/profile')">Profile</div>
       <div class="menu-item" @click="navigate('/settings')">Settings</div>
+      
+      <div class="menu-footer">
+        <div class="menu-item back-link" @click="navigate('/dashboard')">
+           User View ↗
+        </div>
+      </div>
     </div>
 
     <div class="main-content">
       <TopNavBar pageTitle="Accounts Dashboard" />
       
       <div class="content-wrapper">
+        
         <div class="stats-grid">
-          <div class="stat-card blue" @click="filterStatus = 'submitted'">
-            <h3>{{ stats.submitted }}</h3> <p>Pending Approval</p>
+          <div class="stat-card blue" @click="applyQuickFilter('submitted')">
+            <div class="stat-icon">📥</div>
+            <div class="stat-info">
+              <h3>{{ stats.pendingApproval }}</h3>
+              <p>Pending Approval</p>
+            </div>
           </div>
-          <div class="stat-card orange" @click="filterStatus = 'referred_back'">
-            <h3>{{ stats.referred }}</h3> <p>Referred Back</p>
+
+          <div class="stat-card orange" @click="applyQuickFilter('more_info')">
+            <div class="stat-icon">↩️</div>
+            <div class="stat-info">
+              <h3>{{ stats.referredBack }}</h3>
+              <p>Referred Back</p>
+            </div>
           </div>
-          <div class="stat-card yellow" @click="filterStatus = 'pending_payment'">
-            <h3>{{ stats.pendingPay }}</h3> <p>Pending Payment</p>
+
+          <div class="stat-card yellow" @click="applyQuickFilter('approved')">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-info">
+              <h3>{{ stats.pendingPayment }}</h3>
+              <p>Pending Payment</p>
+            </div>
           </div>
-          <div class="stat-card green" @click="filterStatus = 'disbursed'">
-            <h3>{{ stats.disbursed }}</h3> <p>Disbursed</p>
+
+          <div class="stat-card red" @click="applyQuickFilter('rejected')">
+            <div class="stat-icon">❌</div>
+            <div class="stat-info">
+              <h3>{{ stats.rejected }}</h3>
+              <p>Rejected</p>
+            </div>
           </div>
+
+          <div class="stat-card green" @click="applyQuickFilter('paid')">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <h3>{{ stats.disbursedCount }}</h3>
+              <p>Disbursed</p>
+            </div>
+          </div>
+
           <div class="stat-card purple year-card">
-             <div class="stat-header"><span>💰 Total ({{ selectedYear }})</span></div>
-             <h3>₹{{ stats.totalDisbursed.toLocaleString() }}</h3>
+            <div class="stat-header">
+              <div class="stat-icon">💰</div>
+              <select v-model="selectedYear" class="year-select" @click.stop>
+                <option :value="2025">2025</option>
+                <option :value="2024">2024</option>
+                <option :value="2023">2023</option>
+              </select>
+            </div>
+            <div class="stat-info">
+              <h3>₹{{ stats.disbursedAmount.toLocaleString() }}</h3>
+              <p>Total ({{ selectedYear }})</p>
+            </div>
           </div>
         </div>
 
         <div class="table-section">
-          <h2>{{ filterStatus.replace('_', ' ').toUpperCase() }} CLAIMS</h2>
           
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Status:</label>
+              <select v-model="filters.status">
+                <option value="all">All Statuses</option>
+                <option value="submitted">Pending Approval</option>
+                <option value="more_info">Referred Back</option>
+                <option value="approved">Pending Payment</option>
+                <option value="rejected">Rejected</option>
+                <option value="paid">Disbursed</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>Category:</label>
+              <select v-model="filters.category">
+                <option value="all">All Categories</option>
+                <option v-for="cat in categoryOptions" :key="cat" :value="cat">{{ cat }}</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>From:</label>
+              <input type="date" v-model="filters.startDate" class="date-input">
+            </div>
+
+            <div class="filter-group">
+              <label>To:</label>
+              <input type="date" v-model="filters.endDate" class="date-input">
+            </div>
+
+            <div class="filter-group push-right">
+              <label>Sort By:</label>
+              <select v-model="filters.sortBy">
+                <option value="recent">Recent First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+            </div>
+
+            <button class="btn-clear" @click="clearFilters" title="Clear All Filters">✕</button>
+          </div>
+
           <div class="table-card">
-            <div v-if="loading" class="loading">Loading...</div>
-            <table v-else class="claims-table">
+            <div v-if="loading" class="loading">Loading data...</div>
+            
+            <div v-else class="table-responsive">
+              <table class="claims-table">
               <thead>
-                <tr>
-                  <th>Claim ID</th>
-                  <th>Faculty Name</th> <th>Date</th>
-                  <th>Category</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
               <tbody>
                 <tr v-for="claim in filteredClaims" :key="claim.id">
                   <td>
