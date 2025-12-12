@@ -39,11 +39,14 @@ const fetchUserProfile = async () => {
   }
 };
 
+// 2. Computed Role Helper (Determines which Sidebar to show)
+const isAccounts = computed(() => user.value?.role === 'Accounts');
+
 onMounted(() => {
   fetchUserProfile();
 });
 
-// 2. Profile Picture Upload
+// 3. Profile Picture Upload
 const triggerFileInput = () => {
   fileInput.value?.click();
 };
@@ -82,7 +85,7 @@ const uploadProfilePicture = async (file: File) => {
   }
 };
 
-// 3. Helper: Initials (Robust Version)
+// 4. Helper: Initials (Robust Version)
 const userInitials = computed(() => {
   if (!user.value) return 'U';
   
@@ -103,7 +106,7 @@ const userInitials = computed(() => {
   return 'U';
 });
 
-// --- 4. NAME EDITING FUNCTIONS ---
+// --- 5. NAME EDITING FUNCTIONS ---
 const startEditingName = () => {
   editedName.value = user.value.name || '';
   isEditingName.value = true;
@@ -138,7 +141,7 @@ const saveName = async () => {
   }
 };
 
-// 5. Navigation & Logout
+// 6. Navigation & Logout
 const navigate = (path: string) => router.push(path);
 
 const handleLogoutConfirm = async () => {
@@ -156,12 +159,25 @@ const handleLogoutConfirm = async () => {
 <template>
   <div class="page-container">
     
-    <div class="sidebar">
+    <div v-if="isAccounts" class="sidebar admin-sidebar">
+      <h2>EasyBills <span class="badge">Admin</span></h2>
+      <div class="menu-item" @click="navigate('/accounts')">Dashboard</div>
+      <div class="menu-item active">Profile</div>
+      <div class="menu-item" @click="navigate('/settings')">Settings</div>
+      
+      <div class="menu-footer">
+        <div class="menu-item back-link" @click="navigate('/dashboard')">
+           User View ↗
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="sidebar faculty-sidebar">
       <h2>EasyBills</h2>
       <div class="menu-item" @click="navigate('/dashboard')">Dashboard</div>
       <div class="menu-item" @click="navigate('/my-claims')">My Claims</div>
       <div class="menu-item" @click="navigate('/upload-bill')">Upload Bill</div>
-      <div class="menu-item active" @click="navigate('/profile')">Profile</div>
+      <div class="menu-item active">Profile</div>
       <div class="menu-item" @click="navigate('/settings')">Settings</div>
     </div>
 
@@ -266,21 +282,34 @@ const handleLogoutConfirm = async () => {
   overflow: hidden;
 }
 
-/* SIDEBAR */
+/* SIDEBAR COMMON STYLES */
 .sidebar {
   width: 260px;
   min-width: 260px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
 }
 
+/* 🟣 FACULTY THEME */
+.faculty-sidebar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* 🔵 ADMIN/ACCOUNTS THEME */
+.admin-sidebar {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+}
+
 .sidebar h2 { margin-bottom: 2rem; text-align: center; font-weight: 700; font-size: 1.6rem; }
+.badge { font-size: 0.7rem; background: #fbbf24; color: #1e3a8a; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px; }
+
 .menu-item { padding: 0.9rem 1rem; border-radius: 0.75rem; margin-bottom: 0.5rem; cursor: pointer; transition: background 0.2s; }
 .menu-item:hover { background: rgba(255, 255, 255, 0.2); }
 .menu-item.active { background: rgba(255, 255, 255, 0.3); font-weight: 600; }
+.menu-footer { margin-top: auto; }
+.back-link { color: #93c5fd; font-size: 0.85rem; }
 
 /* MAIN CONTENT */
 .main-content {
