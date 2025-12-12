@@ -1,17 +1,26 @@
 // services/emailService.js
 const nodemailer = require('nodemailer');
 
-// Ensure you have these in your .env file
+// 1. Configure Transporter with Explicit Settings
+// Using Port 587 (STARTTLS) is more reliable on cloud servers than the default
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true for 465, false for other ports
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    }
+    },
+    tls: {
+        rejectUnauthorized: false // Helps avoid some cloud SSL issues
+    },
+    connectionTimeout: 10000, // 10 seconds timeout
+    greetingTimeout: 10000
 });
 
 // Helper to format ID for Email (EB00001/25)
 const formatID = (id) => {
+    if (!id) return 'UNKNOWN';
     const year = new Date().getFullYear().toString().slice(-2);
     return `EB${id.toString().padStart(5, '0')}/${year}`;
 };
@@ -22,7 +31,7 @@ const sendEmail = async (to, subject, text) => {
             from: `"EasyBills Admin" <${process.env.EMAIL_USER}>`,
             to,
             subject,
-            text // Sending plain text as requested, can be HTML too
+            text 
         });
         console.log(`📧 Email sent to ${to}: ${subject}`);
         return { success: true };
@@ -31,6 +40,10 @@ const sendEmail = async (to, subject, text) => {
         return { success: false, error: error.message };
     }
 };
+
+// ==========================================
+// EMAIL TEMPLATES
+// ==========================================
 
 // 1. SUBMISSION CONFIRMATION
 exports.sendSubmissionConfirmation = async ({ email, claimId, amount }) => {
