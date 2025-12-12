@@ -14,7 +14,6 @@ const selectedYear = ref(new Date().getFullYear());
 const showDetailsModal = ref(false);
 const selectedClaim = ref<any>(null);
 
-// FORMAT ID: EB00001/25
 const formatClaimId = (id: number, dateStr: string) => {
   if (!id) return '---';
   const date = new Date(dateStr || new Date());
@@ -24,13 +23,14 @@ const formatClaimId = (id: number, dateStr: string) => {
 
 const navigate = (path: string) => router.push(path);
 
+// 🔄 FETCH CLAIMS (Updated Endpoint)
 const fetchClaims = async () => {
   loading.value = true;
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    const response = await axios.get(`${apiUrl}/api/faculty/claims`, {
-      withCredentials: true,
-      params: { limit: 1000 } 
+    // 👇 UPDATED: Pointing to the new FINANCE endpoint
+    const response = await axios.get(`${apiUrl}/api/finance/claims`, {
+      withCredentials: true
     });
     if (response.data.success) {
       claims.value = response.data.data;
@@ -78,24 +78,20 @@ const processClaim = async (action: string) => {
   let notes = "";
   let apiStatus = action;
 
-  // 1. REJECT
   if (action === 'rejected') {
     notes = prompt("Please provide reason for Rejection:") || "";
     if (!notes) return;
   }
-  // 2. REFER BACK
-  else if (action === 'more_info') { // Frontend sends 'more_info', Backend saves 'referred_back'
-    notes = prompt("Please provide reason for Referring Back (Clarification):") || "";
+  else if (action === 'more_info') { 
+    notes = prompt("Please provide reason for Referring Back:") || "";
     if (!notes) return;
   }
-  // 3. APPROVE
   else if (action === 'approved') {
-    if (!confirm("Approve this claim? It will move to Pending Payment.")) return;
+    if (!confirm("Approve this claim?")) return;
     notes = "Approved by Accounts.";
   }
-  // 4. DISBURSE
-  else if (action === 'paid') { // Frontend sends 'paid', Backend saves 'disbursed'
-    if (!confirm("Mark as Disbursed? This confirms payment has been made.")) return;
+  else if (action === 'paid') { 
+    if (!confirm("Mark as Disbursed?")) return;
     notes = "Payment processed.";
   }
 
@@ -109,15 +105,14 @@ const processClaim = async (action: string) => {
     // Update Local Data
     const localClaim = claims.value.find(c => c.id === claimId);
     if (localClaim) {
-        // Map UI status manually to reflect immediate change
         if (action === 'approved') localClaim.status = 'pending_payment';
         else if (action === 'more_info') localClaim.status = 'referred_back';
         else if (action === 'paid') localClaim.status = 'disbursed';
         else localClaim.status = action;
     }
     
-    alert(`Claim ${formatClaimId(claimId, selectedClaim.value.createdAt)} updated.`);
-    showDetailsModal.value = false; // Close modal
+    alert(`Claim updated.`);
+    showDetailsModal.value = false;
   } catch (error) {
     alert('Failed to update status.');
   }
@@ -155,9 +150,7 @@ onMounted(() => fetchClaims());
             <h3>{{ stats.disbursed }}</h3> <p>Disbursed</p>
           </div>
           <div class="stat-card purple year-card">
-             <div class="stat-header">
-               <span>💰 Total ({{ selectedYear }})</span>
-             </div>
+             <div class="stat-header"><span>💰 Total ({{ selectedYear }})</span></div>
              <h3>₹{{ stats.totalDisbursed.toLocaleString() }}</h3>
           </div>
         </div>
@@ -171,8 +164,7 @@ onMounted(() => fetchClaims());
               <thead>
                 <tr>
                   <th>Claim ID</th>
-                  <th>Faculty</th>
-                  <th>Date</th>
+                  <th>Faculty Name</th> <th>Date</th>
                   <th>Category</th>
                   <th>Amount</th>
                   <th>Status</th>
@@ -186,13 +178,20 @@ onMounted(() => fetchClaims());
                         {{ formatClaimId(claim.id, claim.createdAt) }}
                     </span>
                   </td>
-                  <td>User {{ claim.facultyId }}</td>
+                  
+                  <td>
+                    <div class="faculty-info">
+                        <span class="f-name">{{ claim.User?.name || 'Unknown User' }}</span>
+                        <span class="f-email">{{ claim.User?.email }}</span>
+                    </div>
+                  </td>
+
                   <td>{{ formatDate(claim.dateIncurred) }}</td>
                   <td>{{ claim.category }}</td>
                   <td class="amount">₹{{ claim.amount }}</td>
                   <td><span :class="['status-badge', claim.status]">{{ claim.status.replace('_', ' ') }}</span></td>
                   <td>
-                    <button class="btn-view" @click="openClaimDetails(claim)">👁️ View / Act</button>
+                    <button class="btn-view" @click="openClaimDetails(claim)">👁️ View</button>
                   </td>
                 </tr>
                 <tr v-if="filteredClaims.length === 0">
@@ -208,16 +207,16 @@ onMounted(() => fetchClaims());
     <div v-if="showDetailsModal" class="modal-overlay" @click.self="showDetailsModal = false">
       <div class="modal-card">
         <div class="modal-header">
-          <h2>Claim Details: {{ formatClaimId(selectedClaim.id, selectedClaim.createdAt) }}</h2>
+          <h2>Claim: {{ formatClaimId(selectedClaim.id, selectedClaim.createdAt) }}</h2>
           <button class="close-btn" @click="showDetailsModal = false">×</button>
         </div>
         
         <div class="modal-body">
           <div class="info-grid">
+            <div><strong>Faculty:</strong> {{ selectedClaim.User?.name }}</div>
             <div><strong>Category:</strong> {{ selectedClaim.category }}</div>
             <div><strong>Amount:</strong> ₹{{ selectedClaim.amount }}</div>
-            <div><strong>Date Incurred:</strong> {{ formatDate(selectedClaim.dateIncurred) }}</div>
-            <div><strong>Current Status:</strong> {{ selectedClaim.status.replace('_', ' ').toUpperCase() }}</div>
+            <div><strong>Date:</strong> {{ formatDate(selectedClaim.dateIncurred) }}</div>
           </div>
           
           <div class="description-box">
@@ -242,13 +241,8 @@ onMounted(() => fetchClaims());
                 <button class="btn-refer" @click="processClaim('more_info')">Refer Back</button>
                 <button class="btn-reject" @click="processClaim('rejected')">Reject</button>
             </div>
-
             <div v-if="selectedClaim.status === 'pending_payment'" class="actions">
                 <button class="btn-pay" @click="processClaim('paid')">Mark Disbursed</button>
-            </div>
-            
-            <div v-if="['disbursed', 'rejected', 'referred_back'].includes(selectedClaim.status)" class="actions">
-                <span class="text-muted">No actions available for this status.</span>
             </div>
         </div>
       </div>
@@ -288,6 +282,11 @@ th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #f1f5f9; }
 th { background: #f8fafc; font-weight: 600; color: #64748b; }
 .claim-link { color: #2563eb; font-weight: 600; cursor: pointer; text-decoration: underline; }
 .btn-view { padding: 4px 10px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+
+/* User Info in Table */
+.faculty-info { display: flex; flex-direction: column; }
+.f-name { font-weight: 600; color: #1e293b; }
+.f-email { font-size: 0.75rem; color: #64748b; }
 
 /* Status Badges */
 .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
