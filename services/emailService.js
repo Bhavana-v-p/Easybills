@@ -1,20 +1,21 @@
 // services/emailService.js
 const nodemailer = require('nodemailer');
 
-// 1. Configure Transporter with Explicit Settings
-// Using Port 587 (STARTTLS) is more reliable on cloud servers than the default
+// 1. Configure Transporter (Optimized for Render/Cloud)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // true for 465, false for other ports
+    port: 587,       // 👈 Changed to 587 (More stable on Render)
+    secure: false,   // 👈 Must be FALSE for Port 587
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
+    // ⚠️ CRITICAL SETTINGS TO FIX TIMEOUTS
     tls: {
-        rejectUnauthorized: false // Helps avoid some cloud SSL issues
+        rejectUnauthorized: false 
     },
-    connectionTimeout: 10000, // 10 seconds timeout
+    family: 4, // 👈 Forces IPv4 (Fixes the ETIMEDOUT error)
+    connectionTimeout: 10000, 
     greetingTimeout: 10000
 });
 
@@ -27,6 +28,9 @@ const formatID = (id) => {
 
 const sendEmail = async (to, subject, text) => {
     try {
+        // Verify connection before attempting to send
+        await transporter.verify();
+        
         await transporter.sendMail({
             from: `"EasyBills Admin" <${process.env.EMAIL_USER}>`,
             to,
