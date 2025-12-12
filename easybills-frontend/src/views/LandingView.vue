@@ -28,8 +28,8 @@ const loginWithGoogle = () => {
   <div class="landing-container">
     <div class="card">
       <h1>EasyBills</h1>
+      <p>Track Every Rupee Digitally and Transparently</p>
       <p>Expense Claim Management System</p>
-      
       <div class="illustration">
         🧾
       </div>
