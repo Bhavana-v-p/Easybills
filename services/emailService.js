@@ -1,22 +1,20 @@
 // services/emailService.js
 const nodemailer = require('nodemailer');
 
-// 1. Configure Transporter (Optimized for Render/Cloud)
+// 1. Configure Transporter (Updated to Port 465 SSL)
+// Switching to Port 465 is the standard fix for 'ETIMEDOUT' errors on Render
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,       // 👈 Changed to 587 (More stable on Render)
-    secure: false,   // 👈 Must be FALSE for Port 587
+    port: 465,       // 👈 Changed to 465 (SSL)
+    secure: true,    // 👈 Must be TRUE for Port 465
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    // ⚠️ CRITICAL SETTINGS TO FIX TIMEOUTS
+    // This setting helps avoid SSL certificate errors in cloud environments
     tls: {
         rejectUnauthorized: false 
-    },
-    family: 4, // 👈 Forces IPv4 (Fixes the ETIMEDOUT error)
-    connectionTimeout: 10000, 
-    greetingTimeout: 10000
+    }
 });
 
 // Helper to format ID for Email (EB00001/25)
