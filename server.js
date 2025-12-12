@@ -46,16 +46,15 @@ const sessionStore = new SequelizeStore({
 });
 
 app.use(session({
-    store: sessionStore,
-    secret: process.env.SESSION_SECRET || 'super_secret_key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: true,        
-        httpOnly: true,      
-        // maxAge: 24 * 60 * 60 * 1000, // ❌ REMOVED: Cookie now expires when browser closes
-        sameSite: 'none'     
-    }
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  proxy: true, // 👈 REQUIRED for Render/Cloud
+  cookie: {
+    secure: true, // 👈 REQUIRED for HTTPS (Render)
+    sameSite: 'none', // 👈 REQUIRED for Cross-Site (Frontend != Backend)
+    maxAge: 24 * 60 * 60 * 1000 
+  }
 }));
 
 sessionStore.sync(); 
