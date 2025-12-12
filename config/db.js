@@ -20,12 +20,34 @@ const sequelize = new Sequelize(
   }
 );
 
+// =========================================================
+// 👇 1. IMPORT MODELS TO DEFINE ASSOCIATIONS
+// =========================================================
+const User = require('../models/User');
+const ExpenseClaim = require('../models/Claim');
+
+// =========================================================
+// 👇 2. DEFINE RELATIONSHIPS
+// This fixes the "EagerLoadingError" by telling Sequelize how tables connect
+// =========================================================
+
+// A User can have multiple Claims
+User.hasMany(ExpenseClaim, { 
+    foreignKey: 'facultyId' 
+});
+
+// A Claim belongs to one User
+ExpenseClaim.belongsTo(User, { 
+    foreignKey: 'facultyId',
+    targetKey: 'id'
+});
+
 const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ PostgreSQL Connected...');
     
-    // 👇 THIS IS THE CRITICAL FIX
+    // 👇 Sync models with database
     // It creates the tables (Users, ExpenseClaims) if they don't exist
     await sequelize.sync({ alter: true }); 
     console.log('✅ Database Synced (Tables Created)');
