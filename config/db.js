@@ -19,6 +19,7 @@ const sequelize = new Sequelize(
     }
   }
 );
+module.exports = { sequelize }; 
 
 // =========================================================
 // 👇 1. IMPORT MODELS TO DEFINE ASSOCIATIONS
@@ -58,4 +59,4 @@ const connectDB = async () => {
   }
 };
 
-module.exports = { sequelize, connectDB };
+module.exports.connectDB = connectDB;
