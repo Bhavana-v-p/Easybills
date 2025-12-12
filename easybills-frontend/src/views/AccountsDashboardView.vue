@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import TopNavBar from '../components/TopNavBar.vue';
@@ -7,17 +7,26 @@ import TopNavBar from '../components/TopNavBar.vue';
 const router = useRouter();
 const claims = ref<any[]>([]);
 const loading = ref(true);
-const filterStatus = ref('submitted'); 
 const selectedYear = ref(new Date().getFullYear());
 
+// --- FILTER STATE ---
+// We sync 'filterStatus' (Cards) with 'filters.status' (Dropdown)
+const filterStatus = ref('submitted'); 
 
-// --- FILTER & SORT STATE ---
 const filters = ref({
-  status: 'all',
+  status: 'submitted', // Default matches filterStatus
   category: 'all',
   startDate: '',
   endDate: '',
   sortBy: 'recent' 
+});
+
+// Sync Filter Bar Dropdown with Stats Cards
+watch(filterStatus, (newVal) => {
+  filters.value.status = newVal;
+});
+watch(() => filters.value.status, (newVal) => {
+  filterStatus.value = newVal;
 });
 
 // MODAL STATE
@@ -33,12 +42,12 @@ const formatClaimId = (id: number, dateStr: string) => {
 
 const navigate = (path: string) => router.push(path);
 
-// 🔄 FETCH CLAIMS (Updated Endpoint)
+// 🔄 FETCH CLAIMS
 const fetchClaims = async () => {
   loading.value = true;
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    // 👇 UPDATED: Pointing to the new FINANCE endpoint
+    // Using the correct finance endpoint
     const response = await axios.get(`${apiUrl}/api/finance/claims`, {
       withCredentials: true
     });
@@ -52,72 +61,66 @@ const fetchClaims = async () => {
   }
 };
 
-// STATS
+// STATS LOGIC
 const stats = computed(() => {
   const currentYear = selectedYear.value;
   const yearClaims = claims.value.filter(c => new Date(c.dateIncurred).getFullYear() === currentYear);
   
   return {
     submitted: claims.value.filter(c => c.status === 'submitted').length,
-    referred: claims.value.filter(c => c.status === 'referred_back').length,
-    pendingPay: claims.value.filter(c => c.status === 'pending_payment').length,
+    referredBack: claims.value.filter(c => c.status === 'referred_back').length,
+    pendingPayment: claims.value.filter(c => c.status === 'pending_payment').length,
     rejected: claims.value.filter(c => c.status === 'rejected').length,
-    disbursed: claims.value.filter(c => c.status === 'disbursed').length,
-    totalDisbursed: yearClaims
+    disbursedCount: claims.value.filter(c => c.status === 'disbursed').length,
+    disbursedAmount: yearClaims
       .filter(c => c.status === 'disbursed')
       .reduce((sum, c) => sum + parseFloat(c.amount || 0), 0)
   };
 });
 
-// --- FILTERING & SORTING LOGIC ---
+// --- FILTERING & SORTING LOGIC (FIXED) ---
 const filteredClaims = computed(() => {
-  if (filterStatus.value === 'all') return claims.value;
-  return claims.value.filter(c => c.status === filterStatus.value);
+  let result = [...claims.value];
 
-  // 1. Filter by Status
+  // 1. Filter by Status (Linked to Cards & Dropdown)
   if (filters.value.status !== 'all') {
-    result = result.filter(c => c.status.toLowerCase() === filters.value.status.toLowerCase());
+    result = result.filter(c => c.status === filters.value.status);
   }
 
   // 2. Filter by Category
   if (filters.value.category !== 'all') {
-    // Normalizes case (e.g., matches "Travel" with "travel")
-    result = result.filter(c => c.category?.toLowerCase() === filters.value.category.toLowerCase());
+    result = result.filter(c => c.category === filters.value.category);
   }
 
   // 3. Filter by Date Range
   if (filters.value.startDate) {
     const start = new Date(filters.value.startDate);
-    result = result.filter(c => new Date(c.dateIncurred || c.date) >= start);
+    result = result.filter(c => new Date(c.dateIncurred) >= start);
   }
   if (filters.value.endDate) {
     const end = new Date(filters.value.endDate);
     end.setHours(23, 59, 59, 999); 
-    result = result.filter(c => new Date(c.dateIncurred || c.date) <= end);
+    result = result.filter(c => new Date(c.dateIncurred) <= end);
   }
 
   // 4. Sort (Recent vs Oldest)
   result.sort((a, b) => {
-    const dateA = new Date(a.dateIncurred || a.date).getTime();
-    const dateB = new Date(b.dateIncurred || b.date).getTime();
+    const dateA = new Date(a.dateIncurred || a.createdAt).getTime();
+    const dateB = new Date(b.dateIncurred || b.createdAt).getTime();
     return filters.value.sortBy === 'recent' ? dateB - dateA : dateA - dateB;
   });
 
   return result;
 });
 
-// SPECIFIC CATEGORIES LIST
+// CATEGORIES LIST
 const categoryOptions = [
-  "Travel", 
-  "Stationery", 
-  "Academic Events", 
-  "Registration Fee", 
-  "Others"
+  "Travel", "Stationery", "Academic Events", "Registration Fee", "Others"
 ];
 
 // Quick Filter from Stats Cards
 const applyQuickFilter = (status: string) => {
-  filters.value.status = status;
+  filterStatus.value = status; // This triggers the watcher to update filters.status
   filters.value.category = 'all';
   filters.value.startDate = '';
   filters.value.endDate = '';
@@ -131,14 +134,16 @@ const clearFilters = () => {
     endDate: '',
     sortBy: 'recent'
   };
+  filterStatus.value = 'all';
 };
+
 // OPEN MODAL
 const openClaimDetails = (claim: any) => {
   selectedClaim.value = claim;
   showDetailsModal.value = true;
 };
 
-    // UPDATE STATUS ACTION
+// UPDATE STATUS ACTION
 const processClaim = async (action: string) => {
   if (!selectedClaim.value) return;
   const claimId = selectedClaim.value.id;
@@ -185,7 +190,10 @@ const processClaim = async (action: string) => {
   }
 };
 
-const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
+const formatDate = (dateString: string) => {
+  if(!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString();
+};
 
 onMounted(() => fetchClaims());
 </script>
@@ -215,12 +223,12 @@ onMounted(() => fetchClaims());
           <div class="stat-card blue" @click="applyQuickFilter('submitted')">
             <div class="stat-icon">📥</div>
             <div class="stat-info">
-              <h3>{{ stats.pendingApproval }}</h3>
+              <h3>{{ stats.submitted }}</h3>
               <p>Pending Approval</p>
             </div>
           </div>
 
-          <div class="stat-card orange" @click="applyQuickFilter('more_info')">
+          <div class="stat-card orange" @click="applyQuickFilter('referred_back')">
             <div class="stat-icon">↩️</div>
             <div class="stat-info">
               <h3>{{ stats.referredBack }}</h3>
@@ -228,7 +236,7 @@ onMounted(() => fetchClaims());
             </div>
           </div>
 
-          <div class="stat-card yellow" @click="applyQuickFilter('approved')">
+          <div class="stat-card yellow" @click="applyQuickFilter('pending_payment')">
             <div class="stat-icon">⏳</div>
             <div class="stat-info">
               <h3>{{ stats.pendingPayment }}</h3>
@@ -244,7 +252,7 @@ onMounted(() => fetchClaims());
             </div>
           </div>
 
-          <div class="stat-card green" @click="applyQuickFilter('paid')">
+          <div class="stat-card green" @click="applyQuickFilter('disbursed')">
             <div class="stat-icon">✅</div>
             <div class="stat-info">
               <h3>{{ stats.disbursedCount }}</h3>
@@ -258,7 +266,6 @@ onMounted(() => fetchClaims());
               <select v-model="selectedYear" class="year-select" @click.stop>
                 <option :value="2025">2025</option>
                 <option :value="2024">2024</option>
-                <option :value="2023">2023</option>
               </select>
             </div>
             <div class="stat-info">
@@ -276,10 +283,10 @@ onMounted(() => fetchClaims());
               <select v-model="filters.status">
                 <option value="all">All Statuses</option>
                 <option value="submitted">Pending Approval</option>
-                <option value="more_info">Referred Back</option>
-                <option value="approved">Pending Payment</option>
+                <option value="referred_back">Referred Back</option>
+                <option value="pending_payment">Pending Payment</option>
                 <option value="rejected">Rejected</option>
-                <option value="paid">Disbursed</option>
+                <option value="disbursed">Disbursed</option>
               </select>
             </div>
 
@@ -317,37 +324,49 @@ onMounted(() => fetchClaims());
             
             <div v-else class="table-responsive">
               <table class="claims-table">
-              <thead>
-              <tbody>
-                <tr v-for="claim in filteredClaims" :key="claim.id">
-                  <td>
-                    <span class="claim-link" @click="openClaimDetails(claim)">
+                <thead>
+                  <tr>
+                    <th>Claim ID</th>
+                    <th>Faculty Name</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="claim in filteredClaims" :key="claim.id">
+                    <td>
+                      <span class="claim-link" @click="openClaimDetails(claim)">
                         {{ formatClaimId(claim.id, claim.createdAt) }}
-                    </span>
-                  </td>
-                  
-                  <td>
-                    <div class="faculty-info">
-                        <span class="f-name">{{ claim.User?.name || 'Unknown User' }}</span>
+                      </span>
+                    </td>
+                    <td>
+                      <div class="faculty-info">
+                        <span class="f-name">{{ claim.User?.name || 'Unknown' }}</span>
                         <span class="f-email">{{ claim.User?.email }}</span>
-                    </div>
-                  </td>
-
-                  <td>{{ formatDate(claim.dateIncurred) }}</td>
-                  <td>{{ claim.category }}</td>
-                  <td class="amount">₹{{ claim.amount }}</td>
-                  <td><span :class="['status-badge', claim.status]">{{ claim.status.replace('_', ' ') }}</span></td>
-                  <td>
-                    <button class="btn-view" @click="openClaimDetails(claim)">👁️ View</button>
-                  </td>
-                </tr>
-                <tr v-if="filteredClaims.length === 0">
-                  <td colspan="7" class="empty-state">No claims found.</td>
-                </tr>
-              </tbody>
-            </table>
+                      </div>
+                    </td>
+                    <td>{{ formatDate(claim.dateIncurred) }}</td>
+                    <td>{{ claim.category }}</td>
+                    <td class="amount">₹{{ claim.amount }}</td>
+                    <td>
+                      <span :class="['status-badge', claim.status]">{{ claim.status.replace('_', ' ') }}</span>
+                    </td>
+                    <td>
+                      <button class="btn-view" @click="openClaimDetails(claim)">👁️ View</button>
+                    </td>
+                  </tr>
+                  <tr v-if="filteredClaims.length === 0">
+                    <td colspan="7" class="empty-state">No claims found matching filters.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -401,41 +420,62 @@ onMounted(() => fetchClaims());
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Basic Layout */
+/* LAYOUT RESET */
 .page-container { display: flex; height: 100vh; width: 100%; font-family: 'Inter', sans-serif; background: #f5f6fa; overflow: hidden; }
-.admin-sidebar { width: 260px; min-width: 260px; background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 2rem; }
-.sidebar h2 { font-size: 1.5rem; margin-bottom: 2rem; font-weight: 700; }
-.badge { font-size: 0.7rem; background: #fbbf24; color: #1e3a8a; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
-.menu-item { padding: 1rem; border-radius: 8px; cursor: pointer; margin-bottom: 0.5rem; }
-.menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.2); font-weight: 600; }
+
+/* SIDEBAR */
+.admin-sidebar { width: 260px; min-width: 260px; background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 2rem 1.5rem; display: flex; flex-direction: column; }
+.sidebar h2 { font-size: 1.5rem; margin-bottom: 2rem; text-align: center; font-weight: 700; }
+.badge { font-size: 0.7rem; background: #fbbf24; color: #1e3a8a; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px; }
+.menu-item { padding: 0.9rem 1rem; border-radius: 0.75rem; margin-bottom: 0.5rem; cursor: pointer; transition: background 0.2s; font-size: 0.95rem; }
+.menu-item:hover { background: rgba(255, 255, 255, 0.1); }
+.menu-item.active { background: rgba(255, 255, 255, 0.2); font-weight: 600; border-left: 4px solid #fbbf24; }
+.menu-footer { margin-top: auto; }
+.back-link { color: #93c5fd; font-size: 0.85rem; }
+
+/* MAIN CONTENT */
 .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
 .content-wrapper { padding: 2rem; width: 100%; max-width: 1400px; margin: 0 auto; }
 
-/* Stats */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-.stat-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; border-left: 5px solid transparent; transition: transform 0.2s; }
-.stat-card:hover { transform: translateY(-3px); }
+/* STATS GRID */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.stat-card { background: white; padding: 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border-left: 5px solid transparent; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 12px rgba(0,0,0,0.1); }
+.stat-icon { font-size: 2rem; background: #f3f4f6; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.stat-info h3 { font-size: 1.6rem; font-weight: 700; margin: 0; color: #1f2937; }
+.stat-info p { font-size: 0.85rem; color: #6b7280; margin: 0; }
+
 .stat-card.blue { border-left-color: #3b82f6; }
 .stat-card.orange { border-left-color: #f97316; }
 .stat-card.yellow { border-left-color: #eab308; }
-.stat-card.green { border-left-color: #22c55e; }
 .stat-card.red { border-left-color: #ef4444; }
-.stat-card.purple { border-left-color: #a855f7; }
+.stat-card.green { border-left-color: #22c55e; }
+.stat-card.purple { border-left-color: #a855f7; display: block; }
+.year-select { padding: 4px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.8rem; cursor: pointer; }
 
-/* Table */
+/* FILTER BAR */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; background: white; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+.filter-group { display: flex; flex-direction: column; gap: 0.3rem; }
+.filter-group label { font-size: 0.8rem; color: #6b7280; font-weight: 600; }
+.filter-group select, .filter-group input { padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 0.9rem; outline: none; min-width: 140px; }
+.date-input { max-width: 150px; }
+.push-right { margin-left: auto; }
+.btn-clear { background: #f3f4f6; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; color: #6b7280; align-self: flex-end; height: 38px; }
+.btn-clear:hover { background: #e5e7eb; color: #374151; }
+
+/* TABLE */
 .table-card { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; padding: 1rem; }
-.claims-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #f1f5f9; }
-th { background: #f8fafc; font-weight: 600; color: #64748b; }
+.claims-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+th, td { padding: 1rem 1.2rem; text-align: left; border-bottom: 1px solid #f1f5f9; }
+th { background: #f8fafc; color: #64748b; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
 .claim-link { color: #2563eb; font-weight: 600; cursor: pointer; text-decoration: underline; }
 .btn-view { padding: 4px 10px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-
-/* User Info in Table */
 .faculty-info { display: flex; flex-direction: column; }
 .f-name { font-weight: 600; color: #1e293b; }
 .f-email { font-size: 0.75rem; color: #64748b; }
+.amount { font-weight: 700; color: #0f172a; }
 
-/* Status Badges */
+/* BADGES */
 .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
 .submitted { background: #eff6ff; color: #3b82f6; }
 .pending_payment { background: #fef9c3; color: #854d0e; }
@@ -443,7 +483,7 @@ th { background: #f8fafc; font-weight: 600; color: #64748b; }
 .rejected { background: #fef2f2; color: #b91c1c; }
 .referred_back { background: #fff7ed; color: #c2410c; }
 
-/* MODAL STYLES */
+/* MODAL */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .modal-card { background: white; width: 600px; max-width: 90%; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
 .modal-header { padding: 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
@@ -460,4 +500,12 @@ th { background: #f8fafc; font-weight: 600; color: #64748b; }
 .btn-refer { background: #f97316; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 .btn-reject { background: #ef4444; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 .btn-pay { background: #1e3a8a; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+@media(max-width: 768px) {
+  .admin-sidebar { display: none; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .filter-bar { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+  .push-right { margin-left: 0; }
+  .btn-clear { align-self: stretch; text-align: center; }
+}
 </style>
