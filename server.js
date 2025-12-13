@@ -1,258 +1,181 @@
 // server.js
-
 const express = require('express');
-
 const dotenv = require('dotenv');
-
 const cors = require('cors');
-
 const path = require('path');
-
 const passport = require('passport');
-
 const session = require('express-session');
- 
-// 👇 NEW: Import Sequelize Session Store
-
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
- 
-// Import Database Connection and Sequelize Instance
-
-// (We need 'sequelize' to create the session table)
-
 const { connectDB, sequelize } = require('./config/db');
- 
-// Load environment variables
+
+// 👇 Import User model directly
+const User = require('./models/User'); 
 
 dotenv.config();
- 
+
 const app = express();
- 
-// 1. Trust Proxy (REQUIRED for Render HTTPS)
+const PORT = process.env.PORT || 3000;
 
+// ==================================================================
+// 🔐 SECURITY & CONNECTION SETTINGS
+// ==================================================================
+
+// 1. Trust Proxy
 app.set('trust proxy', 1);
- 
-// 2. CORS Configuration
 
+// 2. CORS
 const corsOptions = {
-
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-
+    origin: 'https://easybills-amber.vercel.app', 
     credentials: true,
-
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-
     allowedHeaders: ['Content-Type', 'Authorization']
-
 };
-
 app.use(cors(corsOptions));
- 
+
 // 3. Middleware
-
 app.use(express.json({ limit: '10mb' }));
-
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
 app.use(express.static(path.join(__dirname, 'public')));
- 
-// 4. Session Setup (PostgreSQL)
 
-// Initialize the Session Store
-
+// 4. Session Setup
 const sessionStore = new SequelizeStore({
-
     db: sequelize,
-
-    tableName: 'Sessions', // Creates a 'Sessions' table in your DB
-
-    checkExpirationInterval: 15 * 60 * 1000, // Cleanup expired sessions every 15 min
-
-    expiration: 24 * 60 * 60 * 1000 // Sessions expire after 1 day
-
+    tableName: 'Sessions',
+    checkExpirationInterval: 15 * 60 * 1000, 
+    expiration: 24 * 60 * 60 * 1000 
 });
- 
-// Configure Session Middleware
 
-const sessionMiddleware = session({
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  proxy: true, // 👈 REQUIRED for Render to trust the connection
+  cookie: {
+    secure: true, // 👈 REQUIRED for HTTPS (Render/Vercel)
+    sameSite: 'none', // 👈 REQUIRED for Cross-Site (Frontend != Backend)
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
-    store: sessionStore,
-
-    secret: process.env.SESSION_SECRET || 'dev_secret_key',
-
-    resave: false,
-
-    saveUninitialized: false,
-
-    cookie: {
-
-        secure: process.env.NODE_ENV === 'production', 
-
-        httpOnly: true,
-
-        maxAge: 24 * 60 * 60 * 1000, // 1 Day
-
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-
-    }
-
-});
- 
-app.use(sessionMiddleware);
- 
-// Sync the session store (Creates the table if missing)
-
-sessionStore.sync();
- 
-// 5. Passport Config
-
+sessionStore.sync(); 
 require('./config/passport'); 
-
 app.use(passport.initialize());
-
 app.use(passport.session());
- 
-// ==================================================================
-
-// 👇 AUTH ROUTES (Hardcoded to prevent "Cannot GET" errors) 👇
 
 // ==================================================================
- 
-// Route 1: Start Login
+// 👇 AUTH ROUTES
+// ==================================================================
 
 app.get('/auth/google', (req, res, next) => {
-
-    console.log('Login started...'); 
-
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
-
+    console.log('🚀 LOGIN START. Callback:', callbackURL);
+    
     passport.authenticate('google', {
-
         scope: ['profile', 'email'],
-
-        prompt: 'select_account',
-
+        prompt: 'select_account', // 👈 FORCES Google to show account picker every time
         callbackURL: callbackURL
-
     })(req, res, next);
-
 });
- 
-// Route 2: Google Callback
 
 app.get('/auth/google/callback', 
-
     (req, res, next) => {
-
-        console.log('Google returned to callback...');
-
         const callbackURL = process.env.GOOGLE_CALLBACK_URL;
-
         passport.authenticate('google', { 
-
             failureRedirect: '/',
-
             callbackURL: callbackURL 
-
         })(req, res, next);
-
     },
-
     (req, res) => {
-
-        // Successful authentication
-
-        console.log('Authentication successful for:', req.user.email);
-
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-
-        // Explicitly save session before redirecting
-
+        console.log('🎉 AUTH SUCCESS');
+        const frontendUrl = 'https://easybills-amber.vercel.app'; 
         req.session.save((err) => {
-
-            if (err) console.error('Session save error:', err);
-
+            if (err) console.error('Session Save Error:', err);
             res.redirect(`${frontendUrl}/dashboard`);
-
         });
-
     }
-
 );
- 
-// Route 3: Logout
 
+// Improved Logout Route
 app.get('/auth/logout', (req, res, next) => {
-
     req.logout((err) => {
-
         if (err) { return next(err); }
-
+        
         req.session.destroy((err) => {
-
-            res.clearCookie('connect.sid');
-
+            if (err) console.log("Session destroy error:", err);
+            
+// 🧹 FORCE CLEAR COOKIE (Update the name here too!)
+            res.clearCookie('easybills.sid', { // 👈 CHANGE 'connect.sid' TO 'easybills.sid'
+                path: '/',
+                secure: true, 
+                sameSite: 'none'
+            });
+            
             res.status(200).json({ success: true, message: 'Logged out' });
-
         });
-
     });
-
 });
- 
-// ==================================================================
-
-// 👆 END AUTH ROUTES 👆
 
 // ==================================================================
- 
-// Connect Routes
+// 🛠️ ADMIN SETUP & DB FIX ROUTE
+// ==================================================================
+app.get('/setup-admin', async (req, res) => {
+    const targetEmail = '202317b2304@wilp.bits-pilani.ac.in'; 
 
-const claimsRoutes = require('./routes/claims');
+    try {
+        // 1. 🛠️ FIX THE DATABASE ENUM FIRST
+        try {
+            await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS 'Accounts';`);
+            console.log("✅ Enum updated successfully.");
+        } catch (enumError) {
+            console.log("Enum update skipped or failed (might already exist):", enumError.message);
+        }
 
-const userRoutes = require('./routes/user');
- 
-app.use('/api', claimsRoutes);
+        // 2. 👤 UPDATE THE USER
+        let user = await User.findOne({ where: { email: targetEmail } });
 
-app.use('/api/user', userRoutes);
- 
-// Health Check
+        if (user) {
+            await sequelize.query(
+                `UPDATE "Users" SET role = 'Accounts' WHERE email = :email`,
+                { replacements: { email: targetEmail } }
+            );
+            
+            return res.send(`
+                <div style="font-family: sans-serif; padding: 2rem;">
+                    <h1 style="color: green;">✅ Success!</h1>
+                    <p>Database Enum updated.</p>
+                    <p>User <b>${targetEmail}</b> is now an Admin (Accounts).</p>
+                    <p>Please logout and log back in.</p>
+                </div>
+            `);
+        } else {
+            return res.send(`<h1>❌ User Not Found</h1><p>Please log in first to create your account.</p>`);
+        }
+    } catch (error) {
+        return res.status(500).send(`<h1>❌ Error</h1><p>${error.message}</p>`);
+    }
+});
+
+// ==================================================================
+// 👇 API ROUTES
+// ==================================================================
+
+app.use('/api', require('./routes/claims'));
+app.use('/api/user', require('./routes/user'));
 
 app.get('/', (req, res) => {
-
     res.status(200).send('EasyBills Backend is Running!');
-
 });
- 
-// Connect Database & Start Server
+
+app.use('*', (req, res) => {
+    res.status(404).send(`Cannot GET ${req.originalUrl}`);
+});
 
 connectDB().then(() => {
-
     const http = require('http');
-
-    const realtime = require('./services/realtime');
-
     const server = http.createServer(app);
-
-    // Initialize Socket.io
-
-    realtime.init(server, {
-
-        cors: corsOptions,
-
-        sessionMiddleware: sessionMiddleware
-
-    });
- 
     server.listen(PORT, () => {
-
         console.log(`EasyBills server running on port ${PORT}`);
-
     });
-
 }).catch((err) => {
-
     console.error('Failed to connect to database:', err);
-
 });
- 

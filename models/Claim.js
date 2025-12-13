@@ -9,7 +9,7 @@ const ExpenseClaim = sequelize.define('ExpenseClaim', {
         autoIncrement: true,
         primaryKey: true,
     },
-    // Reference to the faculty member (Foreign Key would be set up with a User model)
+    // Reference to the faculty member
     facultyId: { 
         type: DataTypes.INTEGER,
         allowNull: false
@@ -31,28 +31,39 @@ const ExpenseClaim = sequelize.define('ExpenseClaim', {
         allowNull: false,
     },
     // Tracking and Approval Status
+    // 🟢 UPDATED: Includes all required statuses for your workflow
     status: {
-        type: DataTypes.ENUM('draft', 'submitted', 'verified', 'approved', 'paid', 'clarification needed'),
+        type: DataTypes.ENUM(
+            'draft', 
+            'submitted', 
+            'verified', 
+            'approved',         // Legacy status
+            'paid',             // Legacy status
+            'clarification needed', // Legacy status
+            'rejected',         // 👈 Added
+            'referred_back',    // 👈 Added (maps to 'more_info')
+            'pending_payment',  // 👈 Added (maps to 'approved')
+            'disbursed'         // 👈 Added (maps to 'paid')
+        ),
         allowNull: false,
         defaultValue: 'draft'
     },
-    // Store documents and audit trail as JSONB arrays (PostgreSQL data type)
+    // Store documents and audit trail as JSONB arrays
     documents: {
         type: DataTypes.JSONB,
-        defaultValue: [], // Array of objects: [{ fileName, fileUrl }]
+        defaultValue: [], 
         comment: 'Secure storage URLs for bills and receipts.'
     },
     auditTrail: {
         type: DataTypes.JSONB,
-        defaultValue: [], // Array of objects: [{ timestamp, status, changedBy, notes }]
+        defaultValue: [], 
         comment: 'Maintains digital audit trails for transparency.'
     },
     comments: {
         type: DataTypes.JSONB,
-        defaultValue: [], // Accounts dashboard can add comments/feedback.
+        defaultValue: [],
     }
 }, {
-    // Sequelize adds createdAt and updatedAt columns by default
     tableName: 'ExpenseClaims'
 });
 

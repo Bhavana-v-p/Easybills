@@ -17,31 +17,30 @@ passport.deserializeUser(async (id, done) => {
 });
 
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    // 👇 THIS LINE IS CRITICAL
-    callbackURL: process.env.GOOGLE_CALLBACK_URL, 
-    passReqToCallback: true
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL, 
+    passReqToCallback: true
 },
 async (req, accessToken, refreshToken, profile, done) => {
     try {
-        // Check if user exists
+        // 1. Check if user exists
         let user = await User.findOne({ where: { googleId: profile.id } });
 
         if (user) {
-            // 👇 OPTIONAL: Update name if it's missing
-            if (!user.name) {
-                user.name = profile.displayName;
-                await user.save();
-            }
+            // 🛑 CRITICAL LOGIC CHANGE:
+            // We found the user, so we simply return them.
+            // We DO NOT update their name or picture from Google here.
+            // This ensures your manual edits (via the Profile page) are preserved.
             return done(null, user);
         }
 
-        // Create new user with NAME
+        // 2. User doesn't exist? Create new user with Google data
         const newUser = await User.create({
             googleId: profile.id,
             email: profile.emails[0].value,
-            name: profile.displayName, // 👈 SAVE THE NAME HERE
+            name: profile.displayName, // Set initial name from Google
+            picture: profile.photos ? profile.photos[0].value : null, // Set initial picture
             role: 'Faculty'
         });
 
@@ -51,7 +50,5 @@ async (req, accessToken, refreshToken, profile, done) => {
         return done(err, null);
     }
 }));
-
-
 
 module.exports = passport;

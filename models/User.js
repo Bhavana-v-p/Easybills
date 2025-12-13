@@ -19,10 +19,9 @@ const User = sequelize.define('User', {
     unique: true,
     allowNull: false,
   },
-  role: {
-    type: DataTypes.ENUM('Faculty', 'DepartmentHead', 'Finance'),
-    defaultValue: 'Faculty'
-  }
+  name: { type: DataTypes.STRING, allowNull: true }, // Ensure this exists for your name update feature
+  role: { type: DataTypes.ENUM('Faculty', 'Accounts'), defaultValue: 'Faculty' },
+  picture: { type: DataTypes.STRING, allowNull: true }
 }, {
   tableName: 'Users'
 });

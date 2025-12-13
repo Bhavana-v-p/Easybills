@@ -1,160 +1,136 @@
 // services/emailService.js
+const nodemailer = require('nodemailer');
 
-const transporter = require('../config/mailer');
-const emailTemplates = require('./emailTemplates');
+// 1. Configure Transporter (Updated to Port 465 SSL)
+// Switching to Port 465 is the standard fix for 'ETIMEDOUT' errors on Render
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,       // 👈 Changed to 465 (SSL)
+    secure: true,    // 👈 Must be TRUE for Port 465
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    },
+    // This setting helps avoid SSL certificate errors in cloud environments
+    tls: {
+        rejectUnauthorized: false 
+    }
+});
 
-/**
- * Send status change notification email to faculty member
- * @param {Object} options - { email, claimId, status, notes }
- */
-exports.sendStatusNotification = async (options) => {
-  const { email, claimId, status, notes } = options;
-
-  const subject = `Claim #${claimId} Status Update: ${status}`;
-  const htmlContent = emailTemplates.statusChangeTemplate(claimId, status, notes);
-
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: email,
-      subject,
-      html: htmlContent
-    });
-
-    console.log(`Status notification sent to ${email} for claim #${claimId}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return { success: false, error: error.message };
-  }
+// Helper to format ID for Email (EB00001/25)
+const formatID = (id) => {
+    if (!id) return 'UNKNOWN';
+    const year = new Date().getFullYear().toString().slice(-2);
+    return `EB${id.toString().padStart(5, '0')}/${year}`;
 };
 
-/**
- * Send clarification request email (if status changes to 'clarification needed')
- * @param {Object} options - { email, claimId, clarificationNotes }
- */
-exports.sendClarificationRequest = async (options) => {
-  const { email, claimId, clarificationNotes } = options;
-
-  const subject = `Clarification Needed for Claim #${claimId}`;
-  const htmlContent = emailTemplates.clarificationTemplate(claimId, clarificationNotes);
-
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: email,
-      subject,
-      html: htmlContent
-    });
-
-    console.log(`Clarification email sent to ${email} for claim #${claimId}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending clarification email:', error);
-    return { success: false, error: error.message };
-  }
+const sendEmail = async (to, subject, text) => {
+    try {
+        // Verify connection before attempting to send
+        await transporter.verify();
+        
+        await transporter.sendMail({
+            from: `"EasyBills Admin" <${process.env.EMAIL_USER}>`,
+            to,
+            subject,
+            text 
+        });
+        console.log(`📧 Email sent to ${to}: ${subject}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Email error:', error);
+        return { success: false, error: error.message };
+    }
 };
 
-/**
- * Send rejection email
- * @param {Object} options - { email, claimId, rejectionReason }
- */
-exports.sendRejectionEmail = async (options) => {
-  const { email, claimId, rejectionReason } = options;
+// ==========================================
+// EMAIL TEMPLATES
+// ==========================================
 
-  const subject = `Claim #${claimId} Rejected`;
-  const htmlContent = emailTemplates.rejectedTemplate(claimId, rejectionReason);
+// 1. SUBMISSION CONFIRMATION
+exports.sendSubmissionConfirmation = async ({ email, claimId, amount }) => {
+    const fmtId = formatID(claimId);
+    const subject = `Claim #${fmtId} Submitted Successfully`;
+    const text = `Dear Faculty,
 
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: email,
-      subject,
-      html: htmlContent
-    });
+Your claim #${fmtId} for ₹${amount} has been submitted and is Pending Approval.
 
-    console.log(`Rejection email sent to ${email} for claim #${claimId}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending rejection email:', error);
-    return { success: false, error: error.message };
-  }
+---
+EasyBills Team`;
+    return sendEmail(email, subject, text);
 };
 
-/**
- * Send approval email
- * @param {Object} options - { email, claimId, approvalNotes }
- */
-exports.sendApprovalEmail = async (options) => {
-  const { email, claimId, approvalNotes } = options;
+// 2. APPROVED -> PENDING PAYMENT
+exports.sendApprovalEmail = async ({ email, claimId, notes }) => {
+    const fmtId = formatID(claimId);
+    const subject = `Claim #${fmtId} Status Update: Approved`;
+    const text = `Dear Faculty,
 
-  const subject = `Claim #${claimId} Approved`;
-  const htmlContent = emailTemplates.approvedTemplate(claimId, approvalNotes);
+Expense Claim Status Update
 
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: email,
-      subject,
-      html: htmlContent
-    });
+Claim ID: ${fmtId}
+New Status: Pending Payment (Approved)
+Notes: ${notes || 'Your claim has been reviewed and approved.'}
 
-    console.log(`Approval email sent to ${email} for claim #${claimId}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending approval email:', error);
-    return { success: false, error: error.message };
-  }
+---
+Please log in to the EasyBills portal to view full details.`;
+    return sendEmail(email, subject, text);
 };
 
-/**
- * Send payment email
- * @param {Object} options - { email, claimId, amountPaid }
- */
-exports.sendPaymentEmail = async (options) => {
-  const { email, claimId, amountPaid } = options;
+// 3. REFERRED BACK
+exports.sendClarificationRequest = async ({ email, claimId, clarificationNotes }) => {
+    const fmtId = formatID(claimId);
+    const subject = `Clarification Needed for Claim #${fmtId}`;
+    const text = `Action Required: Clarification Needed or More information
 
-  const subject = `Claim #${claimId} Reimbursement Processed`;
-  const htmlContent = emailTemplates.paidTemplate(claimId, amountPaid);
+Claim ID: ${fmtId}
+Status: Referred Back
+Reason:
+${clarificationNotes || 'Please provide itemized receipts for all expenses claimed.'}
 
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: email,
-      subject,
-      html: htmlContent
-    });
-
-    console.log(`Payment email sent to ${email} for claim #${claimId}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending payment email:', error);
-    return { success: false, error: error.message };
-  }
+---
+Reply by logging into the EasyBills portal and updating your claim.`;
+    return sendEmail(email, subject, text);
 };
 
-/**
- * Send submission confirmation email
- * @param {Object} options - { email, claimId, amount }
- */
-exports.sendSubmissionConfirmation = async (options) => {
-  const { email, claimId, amount } = options;
+// 4. REJECTED
+exports.sendRejectionEmail = async ({ email, claimId, rejectionReason }) => {
+    const fmtId = formatID(claimId);
+    const subject = `Claim #${fmtId} Status Update: Rejected`;
+    const text = `Dear Faculty,
 
-  const subject = `Claim #${claimId} Submitted Successfully`;
-  const htmlContent = emailTemplates.submittedTemplate(claimId, amount);
+Your claim #${fmtId} has been Rejected.
 
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: email,
-      subject,
-      html: htmlContent
-    });
+Reason:
+${rejectionReason || 'Claim does not meet policy guidelines.'}
 
-    console.log(`Submission confirmation email sent to ${email} for claim #${claimId}`);
-    return { success: true };
-  } catch (error) {
-    console.error('Error sending submission email:', error);
-    return { success: false, error: error.message };
-  }
+---
+Please contact the Accounts department if you have questions.`;
+    return sendEmail(email, subject, text);
+};
+
+// 5. PAID / DISBURSED
+exports.sendPaymentEmail = async ({ email, claimId, amountPaid, notes }) => {
+    const fmtId = formatID(claimId);
+    const subject = `Payment Disbursed for Claim #${fmtId}`;
+    const text = `Dear Faculty,
+
+Good news! Payment for Claim #${fmtId} has been processed.
+
+Amount Disbursed: ₹${amountPaid}
+Status: Disbursed
+Notes: ${notes || 'Payment transferred to your account.'}
+
+---
+Thank you,
+EasyBills Finance Team`;
+    return sendEmail(email, subject, text);
+};
+
+// 6. GENERIC
+exports.sendStatusNotification = async ({ email, claimId, status, notes }) => {
+    const fmtId = formatID(claimId);
+    const subject = `Claim #${fmtId} Status Update: ${status}`;
+    const text = `Status updated to ${status}.\nNotes: ${notes}`;
+    return sendEmail(email, subject, text);
 };

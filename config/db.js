@@ -1,31 +1,62 @@
-// config/db.js
-
 const { Sequelize } = require('sequelize');
-
-// Load environment variables from .env file
 require('dotenv').config();
 
-// Initialize Sequelize with PostgreSQL connection details
-const sequelize = new Sequelize(process.env.PG_DATABASE, process.env.PG_USER, process.env.PG_PASSWORD, {
+// Setup Sequelize with SSL for Render (Production)
+const sequelize = new Sequelize(
+  process.env.PG_DATABASE,
+  process.env.PG_USER,
+  process.env.PG_PASSWORD,
+  {
     host: process.env.PG_HOST,
     dialect: 'postgres',
-    // Optional: Log SQL queries to console
-    logging: false 
+    port: process.env.PG_PORT || 5432,
+    logging: false,
+    dialectOptions: {
+      ssl: process.env.NODE_ENV === 'production' ? {
+        require: true,
+        rejectUnauthorized: false // Required for Render's self-signed certs
+      } : false
+    }
+  }
+);
+module.exports = { sequelize }; 
+
+// =========================================================
+// 👇 1. IMPORT MODELS TO DEFINE ASSOCIATIONS
+// =========================================================
+const User = require('../models/User');
+const ExpenseClaim = require('../models/Claim');
+
+// =========================================================
+// 👇 2. DEFINE RELATIONSHIPS
+// This fixes the "EagerLoadingError" by telling Sequelize how tables connect
+// =========================================================
+
+// A User can have multiple Claims
+User.hasMany(ExpenseClaim, { 
+    foreignKey: 'facultyId' 
+});
+
+// A Claim belongs to one User
+ExpenseClaim.belongsTo(User, { 
+    foreignKey: 'facultyId',
+    targetKey: 'id'
 });
 
 const connectDB = async () => {
-    try {
-        await sequelize.authenticate();
-        console.log('PostgreSQL connection has been established successfully.');
-        
-        // This command ensures your models are synced (tables created)
-        // Use { force: true } only in development to drop and recreate tables
-        await sequelize.sync(); 
-        
-    } catch (error) {
-        console.error('Unable to connect to the database:', error);
-        process.exit(1);
-    }
+  try {
+    await sequelize.authenticate();
+    console.log('✅ PostgreSQL Connected...');
+    
+    // 👇 Sync models with database
+    // It creates the tables (Users, ExpenseClaims) if they don't exist
+    await sequelize.sync({ alter: true }); 
+    console.log('✅ Database Synced (Tables Created)');
+
+  } catch (err) {
+    console.error('❌ Unable to connect to the database:', err.message);
+    process.exit(1);
+  }
 };
 
-module.exports = { sequelize, connectDB };
+module.exports.connectDB = connectDB;
