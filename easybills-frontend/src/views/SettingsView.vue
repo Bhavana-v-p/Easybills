@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import TopNavBar from '../components/TopNavBar.vue';
@@ -16,7 +16,7 @@ const settings = ref({
   currency: 'INR'
 });
 
-// 1. Fetch User Data (Required for Sidebar Role Logic)
+// 1. Fetch User Data
 const fetchUserProfile = async () => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -24,10 +24,12 @@ const fetchUserProfile = async () => {
     if (response.data.success) {
       user.value = response.data.data;
       
-      // Load saved settings from LocalStorage (Simulation)
+      // Load saved settings
       const saved = localStorage.getItem('easybills_settings');
       if (saved) {
         settings.value = JSON.parse(saved);
+        // Apply Dark Mode immediately on load
+        applyTheme(settings.value.darkMode);
       }
     }
   } catch (error) {
@@ -40,18 +42,28 @@ const fetchUserProfile = async () => {
 // 2. Computed Role Helper
 const isAccounts = computed(() => user.value?.role === 'Accounts');
 
-// 3. Save Action
-const saveSettings = () => {
-  // Save to LocalStorage for now (Backend integration can be added later)
-  localStorage.setItem('easybills_settings', JSON.stringify(settings.value));
-  
-  // Simulate API call
-  setTimeout(() => {
-    alert('Settings saved successfully!');
-  }, 500);
+// 3. Theme Logic
+const applyTheme = (isDark: boolean) => {
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+  } else {
+    document.body.classList.remove('dark-mode');
+  }
 };
 
-// Navigation Helper
+// Watch for changes in Dark Mode toggle
+watch(() => settings.value.darkMode, (newVal) => {
+  applyTheme(newVal);
+});
+
+// 4. Save Action
+const saveSettings = () => {
+  localStorage.setItem('easybills_settings', JSON.stringify(settings.value));
+  setTimeout(() => {
+    alert('Settings saved successfully!');
+  }, 300);
+};
+
 const navigate = (path: string) => router.push(path);
 
 onMounted(() => fetchUserProfile());
@@ -65,11 +77,8 @@ onMounted(() => fetchUserProfile());
       <div class="menu-item" @click="navigate('/accounts')">Dashboard</div>
       <div class="menu-item" @click="navigate('/profile')">Profile</div>
       <div class="menu-item active">Settings</div>
-      
       <div class="menu-footer">
-        <div class="menu-item back-link" @click="navigate('/dashboard')">
-           User View ↗
-        </div>
+        <div class="menu-item back-link" @click="navigate('/dashboard')">User View ↗</div>
       </div>
     </div>
 
@@ -91,7 +100,7 @@ onMounted(() => fetchUserProfile());
         <div v-else class="settings-card">
           <h3>Preferences</h3>
           
-          <div class="setting-group">
+          <div class="setting-group" v-if="!isAccounts">
             <div class="setting-text">
               <h4>Email Notifications</h4>
               <p>Receive updates when your claim status changes.</p>
@@ -102,7 +111,7 @@ onMounted(() => fetchUserProfile());
             </label>
           </div>
 
-          <div class="divider"></div>
+          <div class="divider" v-if="!isAccounts"></div>
 
           <div class="setting-group">
             <div class="setting-text">
@@ -139,6 +148,54 @@ onMounted(() => fetchUserProfile());
 
   </div>
 </template>
+
+<style>
+/* 🌑 GLOBAL DARK MODE STYLES */
+body.dark-mode {
+  background-color: #0f172a !important; /* Dark Slate */
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .page-container {
+  background-color: #0f172a;
+}
+
+body.dark-mode .main-content {
+  background-color: #0f172a;
+}
+
+body.dark-mode .settings-card,
+body.dark-mode .top-nav, 
+body.dark-mode .content-wrapper,
+body.dark-mode .modal-card {
+  background-color: #1e293b !important; /* Dark Card */
+  color: #f1f5f9 !important;
+  box-shadow: none;
+  border: 1px solid #334155;
+}
+
+body.dark-mode h3, 
+body.dark-mode h4,
+body.dark-mode strong {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode p,
+body.dark-mode label,
+body.dark-mode .user-email {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .select-box {
+  background-color: #334155;
+  color: white;
+  border-color: #475569;
+}
+
+body.dark-mode .divider {
+  background-color: #334155;
+}
+</style>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
