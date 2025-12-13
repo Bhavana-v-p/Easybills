@@ -7,7 +7,8 @@ import AccountsDashboardView from '../views/AccountsDashboardView.vue';
 import MyClaimsView from '../views/MyClaimsView.vue';
 import UploadBillView from '../views/UploadBillView.vue';
 import ProfileView from '../views/ProfileView.vue';
-import LandingView from '../views/LandingView.vue'; // 👈 Import the new page
+import SettingsView from '../views/SettingsView.vue'; // 👈 IMPORT SETTINGS VIEW
+import LandingView from '../views/LandingView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,7 +16,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: LandingView // 👈 Show Landing Page, DO NOT Redirect
+      component: LandingView
     },
     {
       path: '/dashboard',
@@ -46,6 +47,13 @@ const router = createRouter({
       name: 'profile',
       component: ProfileView,
       meta: { requiresAuth: true }
+    },
+    // 👇 ADD NEW ROUTE FOR SETTINGS
+    {
+      path: '/settings',
+      name: 'settings',
+      component: SettingsView,
+      meta: { requiresAuth: true }
     }
   ]
 });
@@ -67,7 +75,9 @@ router.beforeEach(async (to, from, next) => {
       if (to.meta.role === 'Accounts' && role !== 'Accounts') {
         return next('/dashboard');
       }
-      if (role === 'Accounts' && (to.path === '/dashboard' || to.path === '/')) {
+      
+      // Prevent Accounts from seeing Faculty Dashboard (redirect to their own)
+      if (role === 'Accounts' && to.path === '/dashboard') {
         return next('/accounts');
       }
       
