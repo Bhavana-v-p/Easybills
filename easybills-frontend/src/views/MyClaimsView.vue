@@ -97,9 +97,19 @@ onMounted(async () => {
                 <tr v-for="claim in claims" :key="claim.id">
                   
                   <td class="id-cell">
-                    {{ formatClaimId(claim.id, claim.createdAt) }}
+                    <span 
+                      v-if="claim.status === 'referred_back' || claim.status === 'draft'"
+                      @click="router.push(`/edit-claim/${claim.id}`)"
+                      style="cursor: pointer; text-decoration: underline; color: #ef4444;"
+                      title="Click to Edit & Resubmit"
+                    >
+                      {{ formatClaimId(claim.id, claim.createdAt) }} ✏️
+                    </span>
+  
+                    <span v-else>
+                      {{ formatClaimId(claim.id, claim.createdAt) }}
+                    </span>
                   </td>
-
                   <td>{{ formatDate(claim.dateIncurred || claim.date) }}</td>
                   <td>{{ claim.category }}</td>
                   <td class="desc-cell">{{ claim.description }}</td>

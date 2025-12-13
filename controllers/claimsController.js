@@ -348,7 +348,91 @@ exports.getClaimDocuments = async (req, res) => {
         res.status(500).json({ success: false, error: 'Server Error' });
     }
 };
+/**
+ * @desc    Resubmit a Referred Back / Draft Claim
+ * @route   PUT /api/faculty/claims/:id
+ * @access  Private (Faculty)
+ */
+exports.resubmitClaim = async (req, res) => {
+    const { id } = req.params;
+    const facultyId = req.user.id;
+    // Extract text fields
+    const { category, amount, description, dateIncurred } = req.body;
 
+    try {
+        // 1. Find Claim & Verify Ownership
+        const claim = await ExpenseClaim.findOne({ 
+            where: { id, facultyId } 
+        });
+
+        if (!claim) {
+            return res.status(404).json({ success: false, error: 'Claim not found' });
+        }
+
+        // 2. Validate Status (Only allow editing if Referred Back or Draft)
+        const allowedStatuses = ['referred_back', 'draft'];
+        if (!allowedStatuses.includes(claim.status)) {
+            return res.status(400).json({ 
+                success: false, 
+                error: `Cannot edit claim with status: ${claim.status}` 
+            });
+        }
+
+        // 3. Handle New File Upload (Optional replacement)
+        if (req.file) {
+            console.log(`📂 Processing replacement file: ${req.file.originalname}`);
+            const bucket = admin.storage().bucket();
+            const filename = `receipts/${uuidv4()}_${req.file.originalname}`;
+            const file = bucket.file(filename);
+
+            await file.save(req.file.buffer, { contentType: req.file.mimetype });
+            await file.makePublic();
+            const documentUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+            
+            // Append new doc to existing list
+            const currentDocs = claim.documents || [];
+            const newDoc = { 
+                fileUrl: documentUrl, 
+                fileName: req.file.originalname,
+                uploadedAt: new Date()
+            };
+            claim.documents = [...currentDocs, newDoc];
+            claim.changed('documents', true); // Notify Sequelize of JSON change
+        }
+
+        // 4. Update Fields
+        if (category) claim.category = category;
+        if (amount) claim.amount = amount;
+        if (description) claim.description = description;
+        if (dateIncurred) claim.dateIncurred = dateIncurred;
+        
+        // 5. Reset Status & Update Audit Trail
+        claim.status = 'submitted';
+
+        const newAuditEntry = {
+            timestamp: new Date(),
+            status: 'submitted',
+            changedBy: 'Faculty',
+            notes: 'Claim edited and resubmitted.'
+        };
+
+        const currentTrail = claim.auditTrail || [];
+        claim.auditTrail = [...currentTrail, newAuditEntry];
+        claim.changed('auditTrail', true);
+
+        await claim.save();
+
+        res.json({ 
+            success: true, 
+            message: 'Claim resubmitted successfully', 
+            data: claim 
+        });
+
+    } catch (error) {
+        console.error('Resubmit Error:', error);
+        res.status(500).json({ success: false, error: 'Server Error during resubmission' });
+    }
+};
 /**
  * @desc    Get ALL claims for Accounts Dashboard (Includes User Name)
  * @route   GET /api/finance/claims

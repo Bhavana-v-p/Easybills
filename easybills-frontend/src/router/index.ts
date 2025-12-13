@@ -9,6 +9,7 @@ import UploadBillView from '../views/UploadBillView.vue';
 import ProfileView from '../views/ProfileView.vue';
 import SettingsView from '../views/SettingsView.vue'; // 👈 IMPORT SETTINGS VIEW
 import LandingView from '../views/LandingView.vue';
+import EditClaimView from '../views/EditClaimView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -54,6 +55,12 @@ const router = createRouter({
       name: 'settings',
       component: SettingsView,
       meta: { requiresAuth: true }
+    }
+    {
+      path: '/edit-claim/:id',
+      name: 'edit-claim',
+      component: EditClaimView,
+      meta: { requiresAuth: true, role: 'Faculty' }
     }
   ]
 });

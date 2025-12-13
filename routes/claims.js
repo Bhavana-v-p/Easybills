@@ -10,6 +10,8 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } 
 });
 
+
+
 // Import Middleware
 const { isAuthenticated } = require('../middleware/auth'); 
 
@@ -24,9 +26,19 @@ const {
     getAllClaims 
 } = require('../controllers/claimsController');
 
+
 // ==========================================
 // 1. FACULTY ROUTES
 // ==========================================
+
+// 🟢 NEW ROUTE: Resubmit Claim
+router.put(
+    '/faculty/claims/:id', 
+    isAuthenticated, 
+    upload.single('receipt'), // Allow file upload
+    claimsController.resubmitClaim // You need to export this function in controller
+);
+
 
 /**
  * POST /api/faculty/claims
