@@ -55,7 +55,7 @@ const router = createRouter({
       name: 'settings',
       component: SettingsView,
       meta: { requiresAuth: true }
-    }
+    },
     {
       path: '/edit-claim/:id',
       name: 'edit-claim',
