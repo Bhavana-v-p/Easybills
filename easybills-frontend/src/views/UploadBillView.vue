@@ -9,12 +9,15 @@ const loading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
 
+// Get Today's Date for Validation (YYYY-MM-DD)
+const maxDate = new Date().toISOString().split('T')[0];
+
 // Form Data
 const form = ref({
   category: 'Travel',
   amount: '',
   description: '',
-  dateIncurred: new Date().toISOString().split('T')[0]
+  dateIncurred: maxDate // Default to today
 });
 
 // Declaration Checkbox State
@@ -32,8 +35,15 @@ const handleFileChange = (event: Event) => {
 
 // Unified Submit Function (Handles both Draft and Final Submit)
 const processClaim = async (statusType: 'submitted' | 'draft') => {
+  // 1. Check Declaration
   if (statusType === 'submitted' && !isDeclared.value) {
     alert("You must acknowledge the declaration before submitting.");
+    return;
+  }
+
+  // 2. 🟢 Validate Future Date
+  if (form.value.dateIncurred > maxDate) {
+    alert("Date Incurred cannot be in the future. Please select a valid date.");
     return;
   }
 
@@ -44,7 +54,7 @@ const processClaim = async (statusType: 'submitted' | 'draft') => {
   try {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
-    // 1. Create Claim Payload
+    // 3. Create Claim Payload
     const payload = {
       ...form.value,
       status: statusType // Send 'draft' or 'submitted'
@@ -57,11 +67,11 @@ const processClaim = async (statusType: 'submitted' | 'draft') => {
     if (!claimResponse.data.success) throw new Error('Failed to create claim');
     const newClaimId = claimResponse.data.data.id;
 
-    // 2. Upload File (if selected)
+    // 4. Upload File (if selected)
     if (file.value) {
       const formData = new FormData();
       
-      // 🟢 FIX: Changed 'document' to 'receipt' to match backend upload.single('receipt')
+      // Matches backend upload.single('receipt')
       formData.append('receipt', file.value);
 
       await axios.post(`${apiUrl}/api/faculty/claims/${newClaimId}/documents`, formData, {
@@ -80,7 +90,6 @@ const processClaim = async (statusType: 'submitted' | 'draft') => {
 
   } catch (error: any) {
     console.error(error);
-    // Better error handling to show backend message if available
     errorMessage.value = error.response?.data?.details || error.response?.data?.error || 'Error processing claim.';
   } finally {
     loading.value = false;
@@ -141,7 +150,12 @@ const navigate = (path: string) => router.push(path);
 
                 <div class="form-group">
                   <label>Date Incurred</label>
-                  <input type="date" v-model="form.dateIncurred" required />
+                  <input 
+                    type="date" 
+                    v-model="form.dateIncurred" 
+                    :max="maxDate"
+                    required 
+                  />
                 </div>
               </div>
 
