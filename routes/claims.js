@@ -10,12 +10,11 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } 
 });
 
-
-
 // Import Middleware
 const { isAuthenticated } = require('../middleware/auth'); 
 
 // Import Controllers
+// 🟢 FIX: Added 'resubmitClaim' to this list
 const { 
     submitClaim, 
     getFacultyClaims, 
@@ -23,22 +22,13 @@ const {
     sendDemoEmail, 
     uploadClaimDocument, 
     getClaimDocuments,
-    getAllClaims 
+    getAllClaims,
+    resubmitClaim 
 } = require('../controllers/claimsController');
-
 
 // ==========================================
 // 1. FACULTY ROUTES
 // ==========================================
-
-// 🟢 NEW ROUTE: Resubmit Claim
-router.put(
-    '/faculty/claims/:id', 
-    isAuthenticated, 
-    upload.single('receipt'), // Allow file upload
-    claimsController.resubmitClaim // You need to export this function in controller
-);
-
 
 /**
  * POST /api/faculty/claims
@@ -61,7 +51,6 @@ router.get('/claims/my-claims', isAuthenticated, getFacultyClaims);
 /**
  * POST /api/faculty/claims/:id/documents
  * Upload a document/receipt to a claim (Standalone)
- * 🟢 FIX: Changed 'document' to 'receipt' to match the Frontend
  */
 router.post('/faculty/claims/:id/documents', isAuthenticated, upload.single('receipt'), uploadClaimDocument);
 
@@ -70,6 +59,13 @@ router.post('/faculty/claims/:id/documents', isAuthenticated, upload.single('rec
  * List all documents for a claim
  */
 router.get('/faculty/claims/:id/documents', isAuthenticated, getClaimDocuments);
+
+/**
+ * PUT /api/faculty/claims/:id
+ * Edit & Resubmit a Referred Back Claim
+ * 🟢 FIX: Uses 'resubmitClaim' directly (removed 'claimsController.' prefix)
+ */
+router.put('/faculty/claims/:id', isAuthenticated, upload.single('receipt'), resubmitClaim);
 
 
 // ==========================================
