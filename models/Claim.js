@@ -9,6 +9,16 @@ const ExpenseClaim = sequelize.define('ExpenseClaim', {
         autoIncrement: true,
         primaryKey: true,
     },
+    // 👇 NEW VIRTUAL FIELD: Automatically formats ID as EB00001/25
+    formattedId: {
+        type: DataTypes.VIRTUAL,
+        get() {
+            const id = this.getDataValue('id');
+            const date = this.getDataValue('createdAt') || new Date();
+            const year = new Date(date).getFullYear().toString().slice(-2);
+            return `EB${String(id).padStart(5, '0')}/${year}`;
+        }
+    },
     // Reference to the faculty member
     facultyId: { 
         type: DataTypes.INTEGER,
@@ -31,7 +41,6 @@ const ExpenseClaim = sequelize.define('ExpenseClaim', {
         allowNull: false,
     },
     // Tracking and Approval Status
-    // 🟢 UPDATED: Includes all required statuses for your workflow
     status: {
         type: DataTypes.ENUM(
             'draft', 

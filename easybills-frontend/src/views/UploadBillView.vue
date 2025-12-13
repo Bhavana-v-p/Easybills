@@ -31,6 +31,7 @@ const handleFileChange = (event: Event) => {
 };
 
 // Unified Submit Function (Handles both Draft and Final Submit)
+// Unified Submit Function (Handles both Draft and Final Submit)
 const processClaim = async (statusType: 'submitted' | 'draft') => {
   if (statusType === 'submitted' && !isDeclared.value) {
     alert("You must acknowledge the declaration before submitting.");
@@ -60,7 +61,9 @@ const processClaim = async (statusType: 'submitted' | 'draft') => {
     // 2. Upload File (if selected)
     if (file.value) {
       const formData = new FormData();
-      formData.append('document', file.value);
+      
+      // 🟢 FIX: Changed 'document' to 'receipt' to match backend upload.single('receipt')
+      formData.append('receipt', file.value);
 
       await axios.post(`${apiUrl}/api/faculty/claims/${newClaimId}/documents`, formData, {
         withCredentials: true,

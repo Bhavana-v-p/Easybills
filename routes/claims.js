@@ -2,13 +2,19 @@
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer'); // 👈 1. Import Multer
 
-// 1. IMPORT MIDDLEWARE
-const upload = require('../middleware/upload');
-// Ensure this path matches your project structure (usually ../middleware/auth)
+// 2. Configure Multer (Memory Storage is required for Firebase)
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit (matching your UI text)
+});
+
+// 3. IMPORT MIDDLEWARE
+// Ensure this path matches your project structure
 const { isAuthenticated } = require('../middleware/auth'); 
 
-// 2. IMPORT CONTROLLERS
+// 4. IMPORT CONTROLLERS
 const { 
     submitClaim, 
     getFacultyClaims, 
@@ -16,7 +22,7 @@ const {
     sendDemoEmail, 
     uploadClaimDocument, 
     getClaimDocuments,
-    getAllClaims // 👈 Added this to the main import list
+    getAllClaims 
 } = require('../controllers/claimsController');
 
 // ==========================================
@@ -26,8 +32,10 @@ const {
 /**
  * POST /api/faculty/claims
  * Submit a new expense claim
+ * 🟢 FIX: Added 'upload.single' middleware here.
+ * Important: The frontend must send the file with the key 'receipt' or 'document'.
  */
-router.post('/faculty/claims', isAuthenticated, submitClaim);
+router.post('/faculty/claims', isAuthenticated, upload.single('receipt'), submitClaim);
 
 /**
  * GET /api/faculty/claims
@@ -43,7 +51,7 @@ router.get('/claims/my-claims', isAuthenticated, getFacultyClaims);
 
 /**
  * POST /api/faculty/claims/:id/documents
- * Upload a document/receipt to a claim
+ * Upload a document/receipt to a claim (Standalone)
  */
 router.post('/faculty/claims/:id/documents', isAuthenticated, upload.single('document'), uploadClaimDocument);
 
@@ -66,8 +74,7 @@ router.put('/finance/claims/:id/status', isAuthenticated, updateClaimStatus);
 
 /**
  * GET /api/finance/claims
- * Get ALL claims for Accounts Dashboard (Includes User Names)
- * This is the new route for the Admin Dashboard
+ * Get ALL claims for Accounts Dashboard
  */
 router.get('/finance/claims', isAuthenticated, getAllClaims);
 
