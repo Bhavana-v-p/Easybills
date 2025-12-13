@@ -31,7 +31,6 @@ const handleFileChange = (event: Event) => {
 };
 
 // Unified Submit Function (Handles both Draft and Final Submit)
-// Unified Submit Function (Handles both Draft and Final Submit)
 const processClaim = async (statusType: 'submitted' | 'draft') => {
   if (statusType === 'submitted' && !isDeclared.value) {
     alert("You must acknowledge the declaration before submitting.");
@@ -81,7 +80,8 @@ const processClaim = async (statusType: 'submitted' | 'draft') => {
 
   } catch (error: any) {
     console.error(error);
-    errorMessage.value = error.response?.data?.error || 'Error processing claim.';
+    // Better error handling to show backend message if available
+    errorMessage.value = error.response?.data?.details || error.response?.data?.error || 'Error processing claim.';
   } finally {
     loading.value = false;
   }
@@ -230,14 +230,14 @@ const navigate = (path: string) => router.push(path);
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* Allow vertical scrolling for form */
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
 .content-wrapper {
-  padding: 1.5rem 2rem; /* Reduced padding for compact look */
+  padding: 1.5rem 2rem;
   width: 100%;
-  max-width: 1000px; /* Constrain width for readability */
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -248,7 +248,7 @@ const navigate = (path: string) => router.push(path);
   font-weight: 700;
 }
 
-/* RED WARNING BOX (Compact) */
+/* RED WARNING BOX */
 .warning-box {
   background-color: #fff5f5;
   border-left: 4px solid #c0392b;
@@ -273,10 +273,10 @@ const navigate = (path: string) => router.push(path);
   width: 100%;
 }
 
-/* 2-Column Layout for Form */
+/* 2-Column Layout */
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Split into 2 equal columns */
+  grid-template-columns: 1fr 1fr;
   gap: 2rem;
 }
 
@@ -385,7 +385,7 @@ input:focus, select:focus, textarea:focus {
 /* Mobile Responsiveness */
 @media(max-width: 768px) {
   .sidebar { display: none; }
-  .form-grid { grid-template-columns: 1fr; gap: 1rem; } /* Stack columns on mobile */
+  .form-grid { grid-template-columns: 1fr; gap: 1rem; }
   .content-wrapper { padding: 1rem; }
   .button-group { flex-direction: column-reverse; }
   .btn-submit, .btn-draft { width: 100%; }

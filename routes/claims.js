@@ -2,19 +2,18 @@
 
 const express = require('express');
 const router = express.Router();
-const multer = require('multer'); // 👈 1. Import Multer
+const multer = require('multer'); 
 
-// 2. Configure Multer (Memory Storage is required for Firebase)
+// Configure Multer
 const upload = multer({ 
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit (matching your UI text)
+    limits: { fileSize: 10 * 1024 * 1024 } 
 });
 
-// 3. IMPORT MIDDLEWARE
-// Ensure this path matches your project structure
+// Import Middleware
 const { isAuthenticated } = require('../middleware/auth'); 
 
-// 4. IMPORT CONTROLLERS
+// Import Controllers
 const { 
     submitClaim, 
     getFacultyClaims, 
@@ -32,8 +31,6 @@ const {
 /**
  * POST /api/faculty/claims
  * Submit a new expense claim
- * 🟢 FIX: Added 'upload.single' middleware here.
- * Important: The frontend must send the file with the key 'receipt' or 'document'.
  */
 router.post('/faculty/claims', isAuthenticated, upload.single('receipt'), submitClaim);
 
@@ -52,8 +49,9 @@ router.get('/claims/my-claims', isAuthenticated, getFacultyClaims);
 /**
  * POST /api/faculty/claims/:id/documents
  * Upload a document/receipt to a claim (Standalone)
+ * 🟢 FIX: Changed 'document' to 'receipt' to match the Frontend
  */
-router.post('/faculty/claims/:id/documents', isAuthenticated, upload.single('document'), uploadClaimDocument);
+router.post('/faculty/claims/:id/documents', isAuthenticated, upload.single('receipt'), uploadClaimDocument);
 
 /**
  * GET /api/faculty/claims/:id/documents
