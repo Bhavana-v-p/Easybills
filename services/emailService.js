@@ -5,15 +5,14 @@ const nodemailer = require('nodemailer');
 // Switching to Port 465 is the standard fix for 'ETIMEDOUT' errors on Render
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,       // 👈 Changed to 465 (SSL)
-    secure: true,    // 👈 Must be TRUE for Port 465
+    port: 465,       // 👈 Force SSL Port
+    secure: true,    // 👈 Must be TRUE for 465
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    // This setting helps avoid SSL certificate errors in cloud environments
     tls: {
-        rejectUnauthorized: false 
+        rejectUnauthorized: false
     }
 });
 
