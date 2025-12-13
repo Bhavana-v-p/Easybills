@@ -23,7 +23,9 @@ const fetchUserProfile = async () => {
     const response = await axios.get(`${apiUrl}/api/user/me`, { withCredentials: true });
 
     if (response.data && response.data.success) {
-      user.value = response.data.data; 
+      user.value = response.data.data;
+      // Debugging: Log exactly what the server sent to the console
+      console.log("User Data Received:", user.value);
     } else {
       debugError.value = 'API returned success: false';
     }
@@ -35,7 +37,7 @@ const fetchUserProfile = async () => {
   }
 };
 
-// 2. Computed Role Helper (Determines which Sidebar to show)
+// 2. Computed Role Helper
 const isAccounts = computed(() => user.value?.role === 'Accounts');
 
 onMounted(() => {
@@ -81,20 +83,21 @@ const uploadProfilePicture = async (file: File) => {
   }
 };
 
-// 4. Helper: Initials (Robust Version)
+// 4. Helper: Initials (Updated to handle "Name" or "name")
 const userInitials = computed(() => {
   if (!user.value) return 'U';
   
-  // If name exists, split it
-  if (user.value.name) {
-    const names = user.value.name.split(' ');
+  // 👇 CHECK BOTH CASINGS HERE
+  const fullName = user.value.name || user.value.Name;
+
+  if (fullName) {
+    const names = fullName.split(' ');
     if (names.length >= 2) {
       return (names[0][0] + names[1][0]).toUpperCase();
     }
     return names[0][0].toUpperCase();
   }
   
-  // Fallback to Email if no name
   if (user.value.email) {
     return user.value.email.substring(0, 2).toUpperCase();
   }
@@ -178,7 +181,9 @@ const handleLogoutConfirm = async () => {
             />
 
             <div class="name-container">
-               <h2 class="user-name">{{ user.name }}</h2>
+               <h2 class="user-name">
+                 {{ user.name || user.Name || 'Name Not Found' }}
+               </h2>
             </div>
 
             <span class="role-badge">{{ user.role || 'User' }}</span>
