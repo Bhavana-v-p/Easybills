@@ -31,7 +31,7 @@ const sendEmail = async (to, subject, html) => {
         // but keeping it here ensures we catch connection errors per request for now.
         await transporter.verify();
         
-        await transporter.sendMail({
+        const info = await transporter.sendMail({
             from: `"EasyBills Admin" <${process.env.EMAIL_USER}>`,
             to,
             subject,
