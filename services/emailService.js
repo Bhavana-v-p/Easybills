@@ -1,24 +1,20 @@
 const nodemailer = require('nodemailer');
 
-// 1. Configure Transporter (Port 465 SSL)
-// This configuration bypasses standard cloud firewall blocks on Port 587.
+// 1. Configure Transporter for Resend SMTP
+// Resend uses 'smtp.resend.com' on port 465 (Secure)
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,       // 👈 Force SSL Port
-    secure: true,    // 👈 Must be TRUE for 465
+    host: 'smtp.resend.com',
+    port: 465,
+    secure: true, 
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    tls: {
-        rejectUnauthorized: false
+        user: 'resend', // Always 'resend'
+        pass: process.env.EMAIL_PASS // Your Resend API Key (starts with re_...)
     }
 });
 
 // Helper to format ID for Email (e.g., EB00001/25)
 const formatID = (id) => {
     if (!id) return 'UNKNOWN';
-    // Handle numeric IDs or existing string formats
     const idNum = id.toString().replace(/\D/g, ''); 
     const year = new Date().getFullYear().toString().slice(-2);
     return `EB${idNum.padStart(5, '0')}/${year}`;
@@ -27,20 +23,24 @@ const formatID = (id) => {
 const sendEmail = async (to, subject, html) => {
     try {
         // Verify connection before attempting to send
-        // Note: In high-traffic apps, verify() is usually run once on startup, 
-        // but keeping it here ensures we catch connection errors per request for now.
         await transporter.verify();
         
+        // ⚠️ IMPORTANT FOR RESEND FREE TIER:
+        // You MUST send FROM 'onboarding@resend.dev' if you haven't verified a domain.
+        // If you have verified a domain (e.g., mail.easybills.com), use that instead.
+        const fromAddress = 'onboarding@resend.dev'; 
+
         const info = await transporter.sendMail({
-            from: `"EasyBills Admin" <${process.env.EMAIL_USER}>`,
-            to,
+            from: `"EasyBills Admin" <${fromAddress}>`,
+            to: to, // On Free Tier, this must be YOUR email (the one you signed up with)
             subject,
-            html // Use 'html' instead of 'text' for better formatting if needed
+            html 
         });
-        console.log(`📧 Email sent to ${to}: ${subject}`);
+        console.log(`✅ Email sent to ${to}: ${info.messageId}`);
         return { success: true };
     } catch (error) {
         console.error('❌ Email error:', error.message);
+        // We log the error but don't crash the app
         return { success: false, error: error.message };
     }
 };
@@ -83,6 +83,8 @@ exports.sendClarificationRequest = async ({ email, claimId, clarificationNotes }
     const fmtId = formatID(claimId);
     const subject = `Clarification Needed for Claim #${fmtId}`;
     const html = `
+        <h3>Dear Faculty,</h3>
+        <p>Your claim <strong>#${fmtId}</strong> requires additional information before it can be processed.</p>
         <h3 style="color: #d35400;">Action Required</h3>
         <p><strong>Claim ID:</strong> ${fmtId}</p>
         <p><strong>Status:</strong> <span style="color: #d35400;">Referred Back</span></p>
