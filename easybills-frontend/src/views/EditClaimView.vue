@@ -118,7 +118,7 @@ onMounted(fetchClaim);
         
         <div v-else class="form-card">
           <div class="header-row">
-            <h1>Edit Claim #{{ claimId }}</h1>
+            <h1>Edit Claim #{{ formattedId }}</h1>
             <span class="status-badge">{{ claim.status.replace('_', ' ') }}</span>
           </div>
 
