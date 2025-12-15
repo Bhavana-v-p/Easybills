@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
@@ -7,9 +6,8 @@ const passport = require('passport');
 const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const { connectDB, sequelize } = require('./config/db');
-
-// 👇 Import User model directly
 const User = require('./models/User'); 
+const realtime = require('./services/realtime'); // 👈 IMPORT REALTIME SERVICE
 
 dotenv.config();
 
@@ -20,10 +18,8 @@ const PORT = process.env.PORT || 3000;
 // 🔐 SECURITY & CONNECTION SETTINGS
 // ==================================================================
 
-// 1. Trust Proxy
 app.set('trust proxy', 1);
 
-// 2. CORS
 const corsOptions = {
     origin: 'https://easybills-amber.vercel.app', 
     credentials: true,
@@ -32,12 +28,11 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// 3. Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 4. Session Setup
+// Session Setup
 const sessionStore = new SequelizeStore({
     db: sequelize,
     tableName: 'Sessions',
@@ -47,13 +42,14 @@ const sessionStore = new SequelizeStore({
 
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your_secret_key',
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
-  proxy: true, // 👈 REQUIRED for Render to trust the connection
+  proxy: true, 
   cookie: {
-    secure: true, // 👈 REQUIRED for HTTPS (Render/Vercel)
-    sameSite: 'none', // 👈 REQUIRED for Cross-Site (Frontend != Backend)
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    secure: true, 
+    sameSite: 'none', 
+    maxAge: 24 * 60 * 60 * 1000 
   }
 }));
 
@@ -69,10 +65,9 @@ app.use(passport.session());
 app.get('/auth/google', (req, res, next) => {
     const callbackURL = process.env.GOOGLE_CALLBACK_URL;
     console.log('🚀 LOGIN START. Callback:', callbackURL);
-    
     passport.authenticate('google', {
         scope: ['profile', 'email'],
-        prompt: 'select_account', // 👈 FORCES Google to show account picker every time
+        prompt: 'select_account',
         callbackURL: callbackURL
     })(req, res, next);
 });
@@ -95,21 +90,16 @@ app.get('/auth/google/callback',
     }
 );
 
-// Improved Logout Route
 app.get('/auth/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) { return next(err); }
-        
         req.session.destroy((err) => {
             if (err) console.log("Session destroy error:", err);
-            
-// 🧹 FORCE CLEAR COOKIE (Update the name here too!)
-            res.clearCookie('easybills.sid', { // 👈 CHANGE 'connect.sid' TO 'easybills.sid'
+            res.clearCookie('connect.sid', { 
                 path: '/',
                 secure: true, 
                 sameSite: 'none'
             });
-            
             res.status(200).json({ success: true, message: 'Logged out' });
         });
     });
@@ -120,35 +110,20 @@ app.get('/auth/logout', (req, res, next) => {
 // ==================================================================
 app.get('/setup-admin', async (req, res) => {
     const targetEmail = '202317b2304@wilp.bits-pilani.ac.in'; 
-
     try {
-        // 1. 🛠️ FIX THE DATABASE ENUM FIRST
         try {
             await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS 'Accounts';`);
-            console.log("✅ Enum updated successfully.");
-        } catch (enumError) {
-            console.log("Enum update skipped or failed (might already exist):", enumError.message);
-        }
+        } catch (e) {}
 
-        // 2. 👤 UPDATE THE USER
         let user = await User.findOne({ where: { email: targetEmail } });
-
         if (user) {
             await sequelize.query(
                 `UPDATE "Users" SET role = 'Accounts' WHERE email = :email`,
                 { replacements: { email: targetEmail } }
             );
-            
-            return res.send(`
-                <div style="font-family: sans-serif; padding: 2rem;">
-                    <h1 style="color: green;">✅ Success!</h1>
-                    <p>Database Enum updated.</p>
-                    <p>User <b>${targetEmail}</b> is now an Admin (Accounts).</p>
-                    <p>Please logout and log back in.</p>
-                </div>
-            `);
+            return res.send(`<h1>✅ Success! User is now Admin.</h1>`);
         } else {
-            return res.send(`<h1>❌ User Not Found</h1><p>Please log in first to create your account.</p>`);
+            return res.send(`<h1>❌ User Not Found. Login first.</h1>`);
         }
     } catch (error) {
         return res.status(500).send(`<h1>❌ Error</h1><p>${error.message}</p>`);
@@ -166,13 +141,14 @@ app.get('/', (req, res) => {
     res.status(200).send('EasyBills Backend is Running!');
 });
 
-app.use('*', (req, res) => {
-    res.status(404).send(`Cannot GET ${req.originalUrl}`);
-});
-
+// Start Server
 connectDB().then(() => {
     const http = require('http');
     const server = http.createServer(app);
+    
+    // 🟢 INITIALIZE REALTIME (Fixes the "Realtime not initialized" error)
+    realtime.init(server);
+
     server.listen(PORT, () => {
         console.log(`EasyBills server running on port ${PORT}`);
     });
