@@ -1,18 +1,10 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// 1. Configure Transporter for Resend SMTP
-// Resend uses 'smtp.resend.com' on port 465 (Secure)
-const transporter = nodemailer.createTransport({
-    host: 'smtp.resend.com',
-    port: 465,
-    secure: true, 
-    auth: {
-        user: 'resend', // Always 'resend'
-        pass: process.env.EMAIL_PASS // Your Resend API Key (starts with re_...)
-    }
-});
+// 1. Initialize Resend with your API Key
+// This uses HTTP (Port 443) which works perfectly on Render
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Helper to format ID for Email (e.g., EB00001/25)
+// Helper to format ID for Email
 const formatID = (id) => {
     if (!id) return 'UNKNOWN';
     const idNum = id.toString().replace(/\D/g, ''); 
@@ -22,26 +14,25 @@ const formatID = (id) => {
 
 const sendEmail = async (to, subject, html) => {
     try {
-        // Verify connection before attempting to send
-        await transporter.verify();
-        
-        // ⚠️ IMPORTANT FOR RESEND FREE TIER:
-        // You MUST send FROM 'onboarding@resend.dev' if you haven't verified a domain.
-        // If you have verified a domain (e.g., mail.easybills.com), use that instead.
-        const fromAddress = 'onboarding@resend.dev'; 
-
-        const info = await transporter.sendMail({
-            from: `"EasyBills Admin" <${fromAddress}>`,
-            to: to, // On Free Tier, this must be YOUR email (the one you signed up with)
-            subject,
-            html 
+        // ⚠️ IMPORTANT: On Free Tier, you must send FROM 'onboarding@resend.dev'
+        // Emails will ONLY be delivered to the email address you registered with Resend.
+        const { data, error } = await resend.emails.send({
+            from: 'onboarding@resend.dev',
+            to: to, 
+            subject: subject,
+            html: html
         });
-        console.log(`✅ Email sent to ${to}: ${info.messageId}`);
+
+        if (error) {
+            console.error('❌ Email API Error:', error);
+            return { success: false, error: error.message };
+        }
+
+        console.log(`✅ Email sent successfully via API to ${to}. ID: ${data.id}`);
         return { success: true };
-    } catch (error) {
-        console.error('❌ Email error:', error.message);
-        // We log the error but don't crash the app
-        return { success: false, error: error.message };
+    } catch (err) {
+        console.error('❌ Unexpected Email Error:', err.message);
+        return { success: false, error: err.message };
     }
 };
 
